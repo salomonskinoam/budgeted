@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ml-platform-env"
+version = "0.1.0"
+requires-python = ">=3.9"
+dependencies = [
+    "pandas>=2.0.0",
+    "PyYAML>=6.0",
+    "numpy>=1.24.0",
+    "scikit-learn>=1.3.0",
+    "scipy>=1.11.0",
+    "statsmodels>=0.14.2",
+    "networkx>=3.2.1",
+    "mlxtend>=0.23.1",
+    "xgboost>=2.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["environment"]
+
+[tool.pytest.ini_options]
+testpaths = ["environment"]
+pythonpath = ["."]
+markers = [
+    "integration: marks integration-style tests",
+    "performance: marks performance-oriented tests",
+]
+filterwarnings = [
+    "ignore:distutils Version classes are deprecated\\. Use packaging\\.version instead\\.:DeprecationWarning:pytest_freezegun",
+]

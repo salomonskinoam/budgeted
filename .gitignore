@@ -216,3 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Horizon venv (holds the API key in activate)
+horizon_env/
