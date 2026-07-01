@@ -8,10 +8,12 @@ feature values. Test features + labels stay grader-side; labels are never transm
 accuracy vs the hidden test labels -> BENCH_RESULT for the grader.
 """
 from __future__ import annotations
+import base64
 import json
 import os
 import pwd
 import subprocess
+import threading
 from pathlib import Path
 
 import numpy as np
@@ -22,6 +24,10 @@ from sdk.path_mappings import CONTAINER_ACTIVE_CONFIG, CONTAINER_DATA_ROOT, CONT
 from sdk.hor_task import MODEL_VENV_PYTHON
 from worlds.budgeted.paths import SOLUTION_SCRIPT, BENCH_RESULT, POLICY_RUNNER
 from worlds.budgeted.objective import resolve
+
+# Kill a hanging policy well under the platform's 600s grade cap, so one bad row can't burn the whole
+# grade. On kill the runner's stdout hits EOF and the loop below scores the rest as wrong.
+GRADE_WATCHDOG_S = 480.0
 
 _CFG = json.loads(Path(CONTAINER_ACTIVE_CONFIG).read_text())
 METRICS = _CFG["metrics"]
@@ -53,6 +59,12 @@ def run_mediated() -> dict:
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1,
         preexec_fn=_demote_to_model,
     )
+    # Watchdog: a policy that hangs (infinite loop in select_next/predict) would otherwise block recv()
+    # forever and burn the platform grade cap. Killing the proc makes readline() return "" (EOF), which
+    # the loop below treats as a dead runner and scores every remaining row as wrong.
+    watchdog = threading.Timer(GRADE_WATCHDOG_S, proc.kill)
+    watchdog.daemon = True
+    watchdog.start()
 
     def send(m):
         proc.stdin.write(json.dumps(m) + "\n"); proc.stdin.flush()
@@ -88,26 +100,33 @@ def run_mediated() -> dict:
     except BrokenPipeError:
         pass
     proc.stdin.close(); proc.wait()
+    watchdog.cancel()
 
     # A broken/crashed policy leaves rows unpredicted; count them as wrong (default class 0) so a bad
     # solution scores low rather than erroring the grade. Budget is enforced above, never exceeded.
     preds[preds < 0] = 0
     assert max_over <= 1e-9, f"budget violated: max overspend {max_over}"
+    # predictions_b64: the fixed-test predictions for this run, so per-run stats + the SDK's paired
+    # rank_resolution / gap test can be recomputed hosted (the fusion world emits this the same way).
+    preds_b64 = base64.b64encode(preds.astype(np.int32).tobytes()).decode()
     return {
         "balanced_accuracy": float(balanced_accuracy_score(yte, preds)),
         "macro_f1": float(f1_score(yte, preds, average="macro")),
+        "predictions_b64": preds_b64,
     }
 
 
 @pytest.fixture(scope="module")
 def benchmarks() -> dict:
     student = run_mediated()
+    preds_b64 = student.pop("predictions_b64")               # per-run predictions, kept out of metrics
     v = float(student[PRIMARY])
     score = v / BEST_OBSERVED / SCORE_DIVISOR
     result = {
         "primary": PRIMARY, "score": score,
         "reason": f"{METRICS[PRIMARY]['label']} = {v:.4f} (best_observed={BEST_OBSERVED})",
         "gates": {}, "gate_tolerance": _CFG["gate_tolerance"],
+        "predictions_b64": preds_b64,
     }
     for m, val in student.items():
         result[f"student_{m}"] = val

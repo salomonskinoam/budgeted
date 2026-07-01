@@ -30,10 +30,14 @@ def main() -> None:
         np.save(ROOT_DIR / f"{s}_features.npy", z[f"{s}_features"].astype(np.float32))
         np.save(ROOT_DIR / f"{s}_labels.npy", z[f"{s}_labels"].astype(np.int64))
     costs = z["costs"].astype(np.float32)
+    # Budget is config-controlled (tasks_def/configs): the config value is the difficulty knob and
+    # overrides whatever was baked into the npz; fall back to the npz only if the config omits it.
+    cfg_budget = getattr(_CFG, "budget", None)
+    budget = float(cfg_budget if cfg_budget is not None else z["budget"])
     meta = {
         "n_features": int(z["train_features"].shape[1]),
         "n_classes": int(_CFG.n_classes),
-        "budget": float(z["budget"]),
+        "budget": budget,
         "costs": costs.tolist(),
         "feature_ids": list(range(int(z["train_features"].shape[1]))),
         "n_train": int(len(z["train_labels"])),

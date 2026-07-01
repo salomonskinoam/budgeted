@@ -7,9 +7,11 @@ happens in verify. The grade orchestration (gate -> benchmark -> score) lives in
 """
 from __future__ import annotations
 import ast
+import json
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from sdk.hor_grading_result import GradingResult
 from sdk.hor_task import HorTask
 
 from worlds.budgeted import config_world
@@ -25,6 +27,21 @@ class BudgetedWorld(HorTask):
 
     def build_prompt(self) -> str:
         return PromptBuilder(self.config, self.source_dir).build()
+
+    def grade(self, transcript: str = "") -> GradingResult:
+        """Ride the per-run test predictions into the feedback string (world-side; SDK stays generic).
+
+        A hosted VALIDATION surfaces only GradingResult.feedback (it drops `details`/subscores), but the
+        paired rank_resolution / gap test needs each run's per-row predictions. verify.py wrote
+        `predictions_b64` into the benchmark result (-> result.details on the scored path); copy it into
+        the feedback JSON so a hosted run returns it, to be read back during recovery. A run that
+        produced no predictions (failed / no policy -> no details) is returned unchanged."""
+        result = super().grade(transcript)
+        if result.details and "predictions_b64" in result.details:
+            feedback = json.loads(result.feedback)
+            feedback["predictions_b64"] = result.details["predictions_b64"]
+            result.feedback = json.dumps(feedback)
+        return result
 
     def dockerfile_template(self) -> Path:
         return Path(__file__).resolve().parent / "Dockerfile"

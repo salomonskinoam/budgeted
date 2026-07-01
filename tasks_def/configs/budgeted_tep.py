@@ -10,6 +10,11 @@ CONFIG: dict = {
     "data_rel": "tep",
     "npz_name": "tep_anon.npz",
     "n_classes": 22,
+    # Per-case acquisition budget (cost units). The knob that sets task difficulty: tighter budget ->
+    # weaker policies fall further -> wider band. Config-controlled; overrides the value baked in the
+    # npz, so changing difficulty is a one-line edit + rebuild (no data regeneration). Costs: 1 cheap /
+    # 3 analyzer, so 15 buys e.g. 15 cheap features or 5 analyzers.
+    "budget": 15,
     "hints": [
         "No single feature (or fixed set of features) is best for every case; which features are "
         "worth acquiring depends on what you have already observed.",
