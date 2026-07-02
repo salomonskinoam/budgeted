@@ -13,6 +13,11 @@ CONFIG: dict = {
     # Per-case acquisition budget (cost units), derived from the offline budget sweep as the
     # constraining value for this dataset. Config-controlled; overrides the npz scalar.
     "budget": 3,
+    # Salvage attempt: DROP TSH (anon feature index 2 = original col 16). TSH is the universal thyroid
+    # screen, so with it available every policy just buys it (step function, ~1 level). Removing it
+    # forces a per-case choice among the other labs (T3 for hyper, TT4/FTI for hypo) -> real acquisition
+    # spread. Applied HOSTED by DataView at setup_data; no npz rebuild.
+    "view": {"drop_features": [2]},
     "hints": [
         "No single feature (or fixed set of features) is best for every case; which features are worth acquiring depends on what you have already observed.",
         "Train a predictor that works from any partial subset of features (e.g. random-mask the training rows) so predict() is robust however few features a case ends up with.",
