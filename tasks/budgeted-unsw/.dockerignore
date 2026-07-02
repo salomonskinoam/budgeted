@@ -1,0 +1,7 @@
+analysis
+.rollouts
+.rollouts-full
+.validation
+__pycache__
+scratch
+*.pyc

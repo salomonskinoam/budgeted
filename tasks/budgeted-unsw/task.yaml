@@ -1,0 +1,10 @@
+prompt: |
+  <PLACEHOLDER>
+
+metadata:
+  difficulty: "hard"
+  category: "budgeted-acquisition"
+  tags:
+    - budgeted-acquisition
+    - active-feature-acquisition
+    - anonymized-unsw
