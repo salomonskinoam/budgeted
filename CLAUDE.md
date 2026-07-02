@@ -27,6 +27,15 @@ std is much less telling than spread, and spread needs to also be reported as "h
 never reduce a timeout below the platform's.** The cap is the sysadmin's to own and to raise (one day they will);
 our code must not undercut it. A hanging policy is killed by that cap and doesn't score, and we deal with it.
 
+## Compute: NEVER run heavy jobs locally
+
+This is a weak personal laptop; heavy compute crashes it. **Model training, budget sweeps, policy
+replay, anything CPU/RAM-bound, and parallel compute subagents MUST run hosted, never on this machine.**
+The pattern: a **throwaway hosted task per dataset** whose oracle runs the computation and returns the
+result (e.g. `predictions_b64`), like fusion's `recover_via_probe`. `push` / `validate` / `evaluations
+submit` already run hosted (build + grade on Horizon) and are safe. Do NOT launch local XGBoost /
+training / offline replay (e.g. `recover_analyze.py`) or fan out compute-heavy local subagents.
+
 ## Jargon
 
 - **the student** — the agent attempting to solve a task (learning via RL).
