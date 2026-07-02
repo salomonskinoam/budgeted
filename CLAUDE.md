@@ -33,19 +33,20 @@ This is a weak personal laptop. Local runs are **ALLOWED, but any non-trivial on
 approved by the user BEFORE running it.** Never launch one unprompted; describe what it is, why local,
 and wait for the go. No "this one looks light" self-judgment, if it does real work, ask first.
 
-**Requires prior user approval** (default these to HOSTED unless the user OKs local):
+**Requires prior user approval** — only genuinely HEAVY computation (default these to HOSTED unless the
+user OKs local):
 - model training, budget sweeps, policy replay, `recover_analyze.py`, XGBoost, torch
 - **building or loading any dataset / npz** — including a "quick" `pd.read_csv` / `np.load` /
   `train_test_split` on real data. `make_data_*.py` for a big dataset defaults to hosted.
 - fanning out compute-heavy local subagents (N parallel jobs = N× the load)
-- background pollers/monitors (say it's running; the user can veto)
 
 **Default (no approval needed): hosted.** A throwaway hosted task whose oracle/**validation** run does
 the computation and returns the result (e.g. `predictions_b64`), like fusion's `recover_via_probe`.
 `push` / `validate` / `evaluations submit` run on Horizon and are safe. Heavy compute we offload goes
 via a throwaway task's VALIDATION run, never by spending evaluation runs.
 
-**No approval needed:** tiny/instant work, file edits, config, git, network calls to hosted APIs.
+**No approval needed (always allowed):** listeners / pollers / monitors (network-only status polling of
+hosted evals — never heavy), tiny/instant work, file edits, config, git, network calls to hosted APIs.
 
 ## Jargon
 
