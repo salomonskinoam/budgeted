@@ -44,9 +44,12 @@ Write a Python file to {script_path} defining a `Policy` class with this interfa
         def predict(self, observed: dict) -> int:
             # return the predicted class id given the features acquired for this case.
 
-The system constructs `Policy(data_dir)` once, then for each case calls `select_next` repeatedly
-(revealing each acquired feature's value, charging its cost, never letting you exceed the budget)
-and finally `predict`. Do not read anything outside {data_dir}/. Only /workdir is writeable.
+The system loads **only this one file**: `{script_path}` must be entirely self-contained. Put the whole
+policy (any helpers, any trained weights loaded at construction) inside it, do not split it across
+modules or write other files the policy imports at runtime, only `{script_path}` is deployed and
+anything else is discarded. The system constructs `Policy(data_dir)` once, then for each case calls
+`select_next` repeatedly (revealing each acquired feature's value, charging its cost, never letting you
+exceed the budget) and finally `predict`. Do not read anything outside {data_dir}/.
 
 ## Environment
 {environment_info}

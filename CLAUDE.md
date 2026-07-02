@@ -21,6 +21,12 @@ std is much less telling than spread, and spread needs to also be reported as "h
   the candidate + its score and ask first.
 - Oracles are NOT IMPORTANT until the final testing phase on taiga. the best observed until then should just be 1.0 even if we have offline "oracles" for testing. these are fake and do NOT reflect what the actual oracle is.
 
+## Grader timeout
+
+**The platform's time cap is the ONLY timeout. Never impose a shorter grader-side watchdog, and
+never reduce a timeout below the platform's.** The cap is the sysadmin's to own and to raise (one day they will);
+our code must not undercut it. A hanging policy is killed by that cap and doesn't score, and we deal with it.
+
 ## Jargon
 
 - **the student** — the agent attempting to solve a task (learning via RL).
@@ -38,6 +44,7 @@ std is much less telling than spread, and spread needs to also be reported as "h
 - Agent-type: always **`meteor`** (pass `--agent-type meteor` explicitly).
 - Machine-type (hosted eval VM, 16 vCPU / 32 GB): **`e2-custom-16-32768`**.
 - Submit: `horizon evaluations submit <task_id> --runs N --model biggie-max-polara --agent-type meteor --machine-type e2-custom-16-32768 --json`
+- **Runs are EXPENSIVE. Gate EVERY evaluation run through the user, never launch one unprompted.** Default `--runs 5` unless the user says otherwise.
 
 ## Commands — always complete, never placeholder
 

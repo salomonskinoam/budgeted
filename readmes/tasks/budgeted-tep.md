@@ -1,16 +1,19 @@
 # budgeted-tep (anonymized TEP, mediated acquisition)
 
-**Verdict: PENDING (real but top-clustered).** The band has a genuine floor (one run errored) and a top
-run that beats the oracle, but the successful runs cluster (0.72–0.81) within test-set noise, so it
-currently resolves ~2 tiers (fail vs solve), not a graded ladder. Real, non-degenerate, not yet a
-confidently wide band.
+**Verdict: PENDING (real band, materially wider on re-run).** The latest eval has a genuine floor (2/5
+produced no working policy, no infra error), a top that beats the oracle, and three successes spread
+across ~0.18 with large adjacent gaps, a graded ladder, not just fail-vs-solve. Rigorous `n_levels`
+being computed.
 
 | metric | band (raw) | spread | levels | oracle | noop | submit |
 |---|---|---|---|---|---|---|
-| balanced-acc | 0.717–0.806 | 0.089 | ~2* | 0.741 | ~0.045 | PENDING |
+| balanced-acc | 0.672–0.851 | 0.179 | ≥3 (top two 11.4σ apart) | 0.741 | ~0.045 | PENDING |
+
+Latest eval `fe32868b` (5 runs). First eval `2eb7b2e7` (7 runs) was tighter: 0.717–0.806, spread 0.089,
+~2 tiers.
 
 [task](https://horizon.bespokelabs.ai/tasks/36abdac8-4edd-4304-a48c-53933cd34f62) ·
-[run](https://horizon.bespokelabs.ai/evaluations/2eb7b2e7-c573-40dc-b134-35776173f74d) ·
+[run](https://horizon.bespokelabs.ai/evaluations/fe32868b-9861-4485-863e-d93c534615a5) ·
 batch `0067d7a3-4134-40d9-a4eb-c29faeeb24fe`
 
 ## The task
@@ -21,28 +24,35 @@ cheap / 3 expensive, per-case budget 15, 22 fault classes). Scored on balanced a
 test split. Full design + anti-hack model: `README_general_direction.md` §20.
 
 ## The band (spread only, per CLAUDE.md)
-7 runs: **errored · 0.717 · 0.730 · 0.769 · 0.782 · 0.806** (run 4 was still finishing at write time).
-- **Floor:** 1/7 errored (produced no working policy) — a real failure mode, the true bottom of the band.
-- **Top:** 0.806 **> oracle 0.741** — students built better acquisition policies than our reference
-  (masking-XGBoost + greedy value-of-information). Healthy: the task rewards skill above the floor.
-- **The 5 successful cluster.** Adjacent gaps are 0.013 / 0.039 / 0.013 / 0.024, all below ~2·SE
-  (test-set balanced-acc SE ≈ 0.048), so they sit within test noise of each other → ~1 tier among the
-  successful, ~2 with the error included.
+Latest eval `fe32868b`, 5 runs: **fail · fail · 0.672 · 0.758 · 0.851**.
+- **Floor:** 2/5 produced no working policy (scored 0, `errored=0` so not infra failures) — a real
+  failure mode, the true bottom of the band.
+- **Top:** 0.851 **> oracle 0.741** and **> the prior eval's 0.806** — students built better
+  acquisition policies than our reference (masking-XGBoost + greedy value-of-information).
+- **The successes are graded, not clustered.** 0.672 / 0.758 / 0.851, adjacent gaps 0.086 and 0.093,
+  both well above ~2·SE (test-set balanced-acc SE ≈ 0.048) → distinct tiers, plus the 0-floor.
+  Score-only, that reads ~3–4 tiers vs the first eval's ~2.
+
+First eval `2eb7b2e7`, 7 runs: error · 0.717 · 0.730 · 0.769 · 0.782 · 0.806 (spread 0.089, the five
+successes clustered within noise, ~2 tiers). The re-run roughly doubled the spread and separated the
+middle.
 
 ## Read
-Non-degenerate (noop ~0.045, top 0.806, failure possible) and the top beats our reference — a genuine
-task. But the discrimination today is **fail-vs-solve**, not fine-grained: good agents converge to
-~0.8. To widen the band (levers, §14 / §20, all cheap config changes):
-- **Tighter budget** (6–9 vs 15) — the offline acquisition-spread gate showed the *largest*
-  adaptive-vs-fixed gaps at tight budgets, so weak policies should fall further.
-- **Acquisition-only variant** (freeze the predictor) — isolates routing skill, removing the
-  "who trained a better XGBoost" confound that lets everyone cluster high.
+Non-degenerate (noop ~0.045, top 0.851, failure real at 2/5) and the top beats our reference — a
+genuine task, and now with graded discrimination rather than fail-vs-solve. Levers still available if
+we want it wider (§14 / §20, cheap config changes): tighter budget (6–9 vs 15, budget is now a one-line
+config knob), or an acquisition-only variant (freeze the predictor) to isolate routing skill.
 
-## `*levels` caveat + rigorous next step
-The ~2 levels is a **score-only, unpaired approximation** (adjacent gaps vs an absolute per-run SE),
-which over-states noise; the SDK's paired `rank_resolution` may resolve more. To get the real
-`gap / sigma / P(gap<=0) / n_levels`, the grader must emit per-run `predictions_b64` (as the fusion
-world does) so predictions can be recovered hosted and fed to `sdk/hor_utils/noise.py`.
+## Rigorous levels (paired resampling, done)
+The grader emits per-run `predictions_b64` (`verify.py` + `world.grade`); because we hold the deployed
+test split, `scratch/analysis/recover_analyze.py` reconstructs each run's policy (all files it wrote,
+not just solution.py), replays it offline through the mediated loop, and feeds predictions to
+`sdk/hor_utils/noise.py`. Replay is faithful, run 2 = 0.8528 (hosted 0.8507), run 3 = 0.7583 (hosted
+0.7584). `paired_gap_sigma` on those two: **gap 0.094, 11.4σ, P(gap≤0)=0**, genuinely distinct tiers,
+not test noise. run 4 (hosted 0.672) used a multi-file solution, which the single-file contract now
+forbids, so it is excluded here and counts only under the old grader. Net: two success tiers proven
+11σ-separated (plus run 4 and the 2/5 zero-floor under the old grader), a graded ladder, not
+fail-vs-solve.
 
 ## Leak / integrity
 Budget enforced grader-side (never exceeded, asserted); test features + labels stay in `/data_root`

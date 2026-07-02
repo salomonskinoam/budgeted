@@ -12,8 +12,8 @@ import base64
 import json
 import os
 import pwd
+import shutil
 import subprocess
-import threading
 from pathlib import Path
 
 import numpy as np
@@ -25,9 +25,9 @@ from sdk.hor_task import MODEL_VENV_PYTHON
 from worlds.budgeted.paths import SOLUTION_SCRIPT, BENCH_RESULT, POLICY_RUNNER
 from worlds.budgeted.objective import resolve
 
-# Kill a hanging policy well under the platform's 600s grade cap, so one bad row can't burn the whole
-# grade. On kill the runner's stdout hits EOF and the loop below scores the rest as wrong.
-GRADE_WATCHDOG_S = 480.0
+# NOTE: we impose NO grader-side timeout on the policy subprocess. The platform's 600s grade cap is the
+# ONLY timeout, it is the sysadmin's to set and to raise, never ours to undercut. A hanging policy is
+# killed by that cap and scores 0, which is correct. Do NOT add a shorter watchdog here.
 
 _CFG = json.loads(Path(CONTAINER_ACTIVE_CONFIG).read_text())
 METRICS = _CFG["metrics"]
@@ -47,8 +47,20 @@ def _demote_to_model():
     os.setuid(pw.pw_uid)
 
 
+def _enforce_single_file() -> None:
+    """The deliverable is exactly ONE file: solution.py. Before anything runs, delete every other entry
+    in the solution dir. A multi-file solution (helper modules the policy imports) then fails at import
+    and scores 0, which is the intended contract: the whole policy must live in solution.py."""
+    sol_dir = SOLUTION_SCRIPT.parent
+    for p in sol_dir.iterdir():
+        if p == SOLUTION_SCRIPT:
+            continue
+        shutil.rmtree(p) if p.is_dir() else p.unlink()
+
+
 def run_mediated() -> dict:
     """Drive the student's Policy over all test rows under budget; return metrics + predictions."""
+    _enforce_single_file()
     meta = json.loads((ROOT_DIR / "meta.json").read_text())
     B = float(meta["budget"]); costs = np.array(meta["costs"], float)
     Xte = np.load(ROOT_DIR / "test_features.npy"); yte = np.load(ROOT_DIR / "test_labels.npy")
@@ -59,12 +71,6 @@ def run_mediated() -> dict:
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1,
         preexec_fn=_demote_to_model,
     )
-    # Watchdog: a policy that hangs (infinite loop in select_next/predict) would otherwise block recv()
-    # forever and burn the platform grade cap. Killing the proc makes readline() return "" (EOF), which
-    # the loop below treats as a dead runner and scores every remaining row as wrong.
-    watchdog = threading.Timer(GRADE_WATCHDOG_S, proc.kill)
-    watchdog.daemon = True
-    watchdog.start()
 
     def send(m):
         proc.stdin.write(json.dumps(m) + "\n"); proc.stdin.flush()
@@ -100,7 +106,6 @@ def run_mediated() -> dict:
     except BrokenPipeError:
         pass
     proc.stdin.close(); proc.wait()
-    watchdog.cancel()
 
     # A broken/crashed policy leaves rows unpredicted; count them as wrong (default class 0) so a bad
     # solution scores low rather than erroring the grade. Budget is enforced above, never exceeded.
