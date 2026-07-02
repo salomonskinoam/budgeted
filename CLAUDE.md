@@ -27,26 +27,25 @@ std is much less telling than spread, and spread needs to also be reported as "h
 never reduce a timeout below the platform's.** The cap is the sysadmin's to own and to raise (one day they will);
 our code must not undercut it. A hanging policy is killed by that cap and doesn't score, and we deal with it.
 
-## Compute: NEVER run heavy jobs locally (this crashed the machine twice)
+## Compute: gate every local run through the user (unapproved heavy runs crashed the machine twice)
 
-This is a weak personal laptop; heavy compute **hard-crashes it**. There are NO exceptions and NO
-"this one looks light" judgment calls. If a command trains/evaluates a model, loads or builds a real
-dataset, parses a large file, or does any CPU/RAM-bound work, it runs HOSTED, never here.
+This is a weak personal laptop. Local runs are **ALLOWED, but any non-trivial one MUST be explicitly
+approved by the user BEFORE running it.** Never launch one unprompted; describe what it is, why local,
+and wait for the go. No "this one looks light" self-judgment, if it does real work, ask first.
 
-**Explicitly forbidden locally** (all must be a hosted throwaway task, run + validated on Horizon):
+**Requires prior user approval** (default these to HOSTED unless the user OKs local):
 - model training, budget sweeps, policy replay, `recover_analyze.py`, XGBoost, torch
 - **building or loading any dataset / npz** — including a "quick" `pd.read_csv` / `np.load` /
-  `train_test_split` on real data. Any dataset over a few thousand rows goes hosted. `make_data_*.py`
-  for a big dataset is a hosted task, NOT a local run.
-- fanning out compute-heavy local subagents (N parallel jobs = N× the crash)
-- background pollers/monitors while the machine is under strain
+  `train_test_split` on real data. `make_data_*.py` for a big dataset defaults to hosted.
+- fanning out compute-heavy local subagents (N parallel jobs = N× the load)
+- background pollers/monitors (say it's running; the user can veto)
 
-**The pattern:** a throwaway hosted task per dataset whose oracle runs the computation and returns the
-result (e.g. `predictions_b64`), like fusion's `recover_via_probe`. `push` / `validate` /
-`evaluations submit` already run on Horizon and are safe.
+**Default (no approval needed): hosted.** A throwaway hosted task whose oracle/**validation** run does
+the computation and returns the result (e.g. `predictions_b64`), like fusion's `recover_via_probe`.
+`push` / `validate` / `evaluations submit` run on Horizon and are safe. Heavy compute we offload goes
+via a throwaway task's VALIDATION run, never by spending evaluation runs.
 
-**Locally allowed:** only tiny/instant work, file edits, config, git, and network calls to the hosted
-APIs. When in doubt, it's hosted.
+**No approval needed:** tiny/instant work, file edits, config, git, network calls to hosted APIs.
 
 ## Jargon
 
