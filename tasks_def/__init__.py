@@ -4,3 +4,4 @@ from tasks_def import budgeted_thyroid  # noqa: F401  importing registers the in
 from tasks_def import budgeted_derma  # noqa: F401  importing registers the instance
 from tasks_def import budgeted_hydraulic  # noqa: F401  importing registers the instance
 from tasks_def import budgeted_diabetes  # noqa: F401  importing registers the instance
+from tasks_def import budgeted_covtype  # noqa: F401  importing registers the instance
