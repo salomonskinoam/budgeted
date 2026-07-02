@@ -617,3 +617,37 @@ We stopped screening and BUILT the world on the TEP scaffold. The built system l
 actual spread — the first real test of whether students land at *different* scores (the band chased
 since §1). **TEP stays a scaffold**; the durable target is a real, big, many-class differential dataset
 (§17, §19) once the pipeline is proven here.
+
+## 21. The per-row budget is MEMORYLESS — the missing dynamic is a global/incremental budget (next work)
+
+**Observation from the salvage sweep.** The world enforces the budget **per row**: every test case gets
+a fresh budget `B`, independent of every other case. That makes acquisition *adaptive within a row* but
+**memoryless across rows** — the optimization is identical on every case, so there is a single best
+per-row policy that all competent agents converge to. The strategy space is **dominated**: one move
+sits on top, everyone finds it, scores pack. This is a big part of why even datasets with genuine
+per-row structure only produced narrow bands, and why the buried datasets buried so cleanly.
+
+**The dynamic we are NOT exercising: early decisions constraining later ones.** The per-row budget
+never forces a *tradeoff over time*. What creates real strategy distinction is when **spending now costs
+you later** — a task where an agent must **ration a shared resource across cases**: spend on the hard,
+ambiguous cases; save on the easy ones. There is no dominant rationing rule, so this is a genuinely
+**non-dominated** space — different agents invent different allocation policies (spend on high
+uncertainty, hold a reserve for later, adaptive thresholds, spend-down schedules) and *those* differences
+separate scores. This likely creates distinction between agents far more robustly than per-row routing.
+
+**Mechanism (next work): a GLOBAL or INCREMENTAL budget.**
+- **Global/total budget** — one pool spent across all N cases (e.g. `total = B * N`), so buying on case
+  i depletes what's available for case j. `select_next` must weigh "is this feature worth it *given what
+  I'll face later*" — a planning-under-scarcity problem with no single winner.
+- **Incremental/depleting budget** — a running balance carried across cases, optionally with refills or
+  a decay, so the agent manages a reservoir over the stream.
+
+The mediated grader already drives every row in sequence, so it can carry a **running balance** with a
+small change (reset the pool once per eval instead of once per row). This is cheap to add and testable.
+
+**Why this reframes the product.** The per-row budget tests *acquisition routing*, which needs the data
+to supply heterogeneous relevance (scarce, §16–§19). A global/incremental budget tests *resource
+rationing under scarcity*, which any dataset with **variable per-case difficulty** supplies — and that
+is nearly universal, far less data-dependent. The rationing band may be the more robust, less
+data-hungry source of spread, and it directly answers "what makes early decisions matter for later."
+This is the next work.
