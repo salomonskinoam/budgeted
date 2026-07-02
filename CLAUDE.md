@@ -3,10 +3,16 @@
 Design bible: `readmes/README_general_direction.md` (what makes a band, the falsifiers, the
 acquisition-spread gate, why we landed on the mediated-grader task). Read it before touching the world.
 
-## Scores: spread only
-**We do NOT care about the mean. Only the SPREAD (the band).** Report min/max/std/spread/mean across runs,
-but conclusions on viability are from the spread. A tight cluster is a bad task even at a high mean. single high outliers to a packed score are good. single low outliers are not as good.
-std is much less telling than spread, and spread needs to also be reported as "how many distinct levels does it contain", as defined in the sdk docs
+## Scores: spread, and above all LEVELS
+**We do NOT care about the mean. The product is the BAND.** Two metrics, reported together:
+- **spread** = max − min across runs (report min/max/std/spread/mean, but never conclude from mean/std).
+- **LEVELS = the number of statistically-distinguishable score tiers** (SDK `rank_resolution` `n_levels`
+  in `sdk/hor_utils/noise.py`). **This is the most important metric.** A wide spread with only 1–2
+  levels is a weak task; many resolvable levels is the goal. Always report `n_levels` next to spread.
+
+A tight cluster is a bad task even at a high mean. A single high outlier above a packed score is good; a
+single low outlier is not as good. Levels are capped by the **rarest class** (resolution): if the test
+set can only resolve ~2 tiers, no lever creates more, widen the data before chasing more levels.
 
 ## Writing style
 
