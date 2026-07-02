@@ -27,14 +27,26 @@ std is much less telling than spread, and spread needs to also be reported as "h
 never reduce a timeout below the platform's.** The cap is the sysadmin's to own and to raise (one day they will);
 our code must not undercut it. A hanging policy is killed by that cap and doesn't score, and we deal with it.
 
-## Compute: NEVER run heavy jobs locally
+## Compute: NEVER run heavy jobs locally (this crashed the machine twice)
 
-This is a weak personal laptop; heavy compute crashes it. **Model training, budget sweeps, policy
-replay, anything CPU/RAM-bound, and parallel compute subagents MUST run hosted, never on this machine.**
-The pattern: a **throwaway hosted task per dataset** whose oracle runs the computation and returns the
-result (e.g. `predictions_b64`), like fusion's `recover_via_probe`. `push` / `validate` / `evaluations
-submit` already run hosted (build + grade on Horizon) and are safe. Do NOT launch local XGBoost /
-training / offline replay (e.g. `recover_analyze.py`) or fan out compute-heavy local subagents.
+This is a weak personal laptop; heavy compute **hard-crashes it**. There are NO exceptions and NO
+"this one looks light" judgment calls. If a command trains/evaluates a model, loads or builds a real
+dataset, parses a large file, or does any CPU/RAM-bound work, it runs HOSTED, never here.
+
+**Explicitly forbidden locally** (all must be a hosted throwaway task, run + validated on Horizon):
+- model training, budget sweeps, policy replay, `recover_analyze.py`, XGBoost, torch
+- **building or loading any dataset / npz** — including a "quick" `pd.read_csv` / `np.load` /
+  `train_test_split` on real data. Any dataset over a few thousand rows goes hosted. `make_data_*.py`
+  for a big dataset is a hosted task, NOT a local run.
+- fanning out compute-heavy local subagents (N parallel jobs = N× the crash)
+- background pollers/monitors while the machine is under strain
+
+**The pattern:** a throwaway hosted task per dataset whose oracle runs the computation and returns the
+result (e.g. `predictions_b64`), like fusion's `recover_via_probe`. `push` / `validate` /
+`evaluations submit` already run on Horizon and are safe.
+
+**Locally allowed:** only tiny/instant work, file edits, config, git, and network calls to the hosted
+APIs. When in doubt, it's hosted.
 
 ## Jargon
 
