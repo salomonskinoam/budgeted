@@ -651,3 +651,121 @@ rationing under scarcity*, which any dataset with **variable per-case difficulty
 is nearly universal, far less data-dependent. The rationing band may be the more robust, less
 data-hungry source of spread, and it directly answers "what makes early decisions matter for later."
 This is the next work.
+
+## 22. Plain global budget COLLAPSES; the direction is COMMIT-mode tasks (brainstorm, in progress)
+
+**The collapse (corrects §21's optimism).** A shared pool over an iid test stream self-averages: with
+a divisible budget and many rows, the optimal global policy is a per-row policy with a shadow price on
+cost, and that price is calibratable from peek data. The pool is a scalar state that concentrates
+around its expected trajectory, so path dependence is negligible; all competent agents converge again.
+Plain global budget only relaxes the uniform-spend constraint; it does not force a new task scheme.
+Within-row adaptivity was already per-row mode's game; the across-row allocation question collapses.
+
+**Hard design constraint (user-set).** Full peek data stays available at agent time and seeds a SMART
+decider. The only permissible ignorance is of the gradually revealed TEST stream. Schemes that force
+decisions from ignorance (knowledge withheld from peek, blind first picks) are rejected: there, score
+differences are random noise on first picks, not skill. Uncertainty must live in WHICH cases arrive
+and in what order, never in withheld knowledge about the case-space.
+
+**The direction: commit-mode tasks.** We want STATE the policy interacts with that is not easily
+changeable: commitments whose take-backs are allowed but neither easy nor cheap. The commitment can
+sit at test time (the online policy commits as it sees the stream) or at agent time (the agent commits
+to state that constrains test time, possibly graded on intermediate commits, which must be shown
+non-gameable). Schemes under analysis; each needs a collapse analysis (does a single best rule
+dominate?), a luck-vs-skill noise analysis (does skill separation survive seed averaging?), a gaming
+check, and an infra-fit check before anything is built:
+
+1. **Test-time commits with paid revision.** Predictions or purchases are commits; revising a past
+   commitment costs from the pool or a small quota. Risk: a dominant meta (commit cheap early, revise
+   later).
+2. **Agent-time commits.** Commit during agent time to state that affects test time, and/or grade
+   intermediate commits. Risk: with full peek anything offline-computable is precomputed; checkpoint
+   grading may be gameable into something degenerate.
+3. **Small-chunk information release (validated in principle).** Information arrives in increments
+   small enough that no single pick is pivotal; the stream's random order then matters far less than
+   the overall gathering strategy. Directly attacks first-pick luck.
+4. **Rate-limited training / mediated data access.** Only X training runs, or restricted val access,
+   with data hidden behind the system and a hidden peek. The scarce resource is queries/compute, not
+   features. Variant: train labels hidden and purchasable from a global label budget (active learning
+   as the task).
+5. **Compounding state.** The environment evolves with the policy's actions (untreated cases return
+   worse, prices move with use). True path dependence, high upside, hard to noise-model.
+6. **Instrument installation.** One-time purchases unlock a feature for the rest of the stream.
+   Currently too vague; needs a concrete spec or gets dropped.
+
+The N-seed protocol and the seed-blocked levels statistic designed for global mode carry over to any
+of these unchanged.
+
+### 22a. The correction, and the analysis folder
+
+A first verdict round was REJECTED by the owner for two failures: verdicts asserted without visible
+reasoning, and collapse arguments that assumed every agent is strong. The correction: **the band is
+the spread across real rollouts of VARYING strength; "the optimal play is computable from peek" is a
+CEILING statement, never by itself a kill** (covtype banded ~3 levels with a computable near-optimum).
+The operative criterion is the SKILL LADDER: how many graded sophistication rungs sit between naive
+and optimal, and whether real agents of varying strength land on distinguishable rungs. A dominance
+argument kills only when the dominant move is ALSO easy to find (one-rung ladder).
+
+The full analyses now live in **`readmes/commit_schemes/`**, one self-contained reasoning file per
+question (tagged [PROVEN]/[ARGUMENT]/[CONJECTURE] steps; each can seed its own work chain):
+
+- `00_band_theory_what_collapse_arguments_prove.md` — the corrected frame itself (reference file).
+  Now carries BOTH owner corrections: strength (a dominance claim kills only if the dominant move is
+  also EASY to discover) and bounded computation (a precomputability claim kills only if the
+  computation is also FAST; "could have committed the same state later" does not mean "would have",
+  because computation during a session generates information). The ladder has a temporal dimension:
+  where a scheme samples an agent's climb matters.
+- `01_agent_time_commits.md` — append-only variant **KILL** on PROVEN exploits (Python shadowing
+  makes text-level append-only vacuous; scratch-space laundering defeats file-level snapshots).
+  Early-lock and checkpoint-grading variants: **UNDECIDED BY ARGUMENT** (both kill arguments died
+  as idealizations, first of strength, then of computation); decided by the transcript-replay
+  pre-test: reconstruct workdir state at 25/50/75/100 percent marks from the recorded covtype and
+  TEP eval transcripts, score ~40 snapshots hosted, keep only if checkpoint aggregates resolve
+  final-ties AND early quality rank-correlates with final quality (else the added resolution is
+  un-averaged session luck; the 5 stream seeds cannot average session noise).
+- `02_small_chunk_information_release.md` — first-round KILL **OVERTURNED → promote to pre-test.**
+  The averaging attack bounds only the ceiling; the scheme CONTAINS the discrete world that banded,
+  partial-posterior play adds middle rungs, and its luck-smoothing shrinks Delta* which itself
+  raises measurable levels.
+- `03_train_label_budget.md` — **KEEP (strongest survivor).** Active learning as the task; loop runs
+  once per seed at grade time (batching is a strategy knob, speed a non-issue); rungs exist below
+  and above the random baseline; gated on the canonical-strategy ladder pre-test.
+- `04_instrument_installation.md` — **FIX-FIRST.** Two collapses (installs = fixed panels; balanced
+  accuracy is invariant to class-arrival mix, worked example in the file) + two escapes (arrival-
+  weighted metric, or per-seed WITHIN-class difficulty mixtures which balanced accuracy does see).
+- `05_compounding_state.md` — consequence dynamics **SURVIVES on TEP only** (bounded compounding
+  gain g < 1 controls both noise validity and luck); congestion pricing and scalar backlog KILL.
+- `06_paid_revision.md` — **KILL standalone**, on a three-part corrected chain: (1) the stream's
+  only novel EXTERNAL content is its mixture, and balanced accuracy is mixture-invariant; (2) the
+  bounded-computation channel (keep training mid-stream, then revise) is dominated by FRONT-LOADING
+  the same compute into `__init__` before the first commit (the grade cap does not care when compute
+  is spent, and front-loaded compute improves every row without revision fees); (3) the
+  non-front-loadable remainder (compute overlapped with row-driving) is a sub-resolution sliver.
+  **SURVIVES paired with the label budget**: revealed labels are the one mid-stream resource that
+  CANNOT be front-loaded (they arrive only by spending the pool during the stream), so the late
+  model honestly beats the early one and revision cashes the learning curve. Refunds remain
+  PROVEN-dead (a revealed value cannot be un-seen).
+- `07_commit_gate_falsifiers.md` — the rebuilt falsifier battery: resolution floor, PROBE-LADDER
+  separation as the primary test (4-6 probes, count adjacent separated steps), vacuity, luck
+  replicates, and a discoverability audit; run order and graduation criteria inside.
+
+### 22b. Two cross-cutting findings (details and proofs in the folder)
+
+1. **Where a scheme samples the climb.** Bounded agents GENERATE information by computing (the
+   session is NOT an information vacuum; "could have committed the same state later" does not mean
+   "would have"). What does hold: grade-time compute can be FRONT-LOADED (the cap does not care when
+   it is spent), so mid-stream improvements needing only compute are dominated by doing the work in
+   `__init__`; only resources revealed mid-stream (purchased labels, arrived rows) cannot be
+   front-loaded. For every scheme ask what the commit-maker has at commit time (knowledge, compute
+   spent, stream-revealed resources) and which of those actually varies across agents.
+2. **The metric couples or decouples the stream.** Balanced accuracy is invariant to the CLASS
+   arrival mix (worked example in file 04), killing schemes whose uncertainty is "which classes
+   arrive." It is NOT invariant to WITHIN-class composition (which rows of a class arrive), which
+   is the metric-preserving escape. Check metric coupling FIRST for any scheme.
+
+**Status: three primary survivors, none built.** (1) Label-budget active learning, optionally
+extended with paid revision from the same pool; (2) instrument installation via one of its two
+escapes; (3) TEP consequence dynamics (scaffold-only). Each is gated on its pre-test in file 07.
+The suggested ORDERING of all surviving work items, with the reasoning, per-item requirements,
+risks, rewards, and band-certainty arguments, is `commit_schemes/08_ordering_and_roadmap.md`
+(its Background section is the bootstrap brief for new agents). Owner decision pending.
