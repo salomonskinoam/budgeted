@@ -1,6 +1,6 @@
 # Handoff: global/incremental budget (the next work) + current world state
 
-> **SUPERSEDED, read `HANDOFF.md` first.** Two things in this file are wrong now:
+> **SUPERSEDED, read the handoffs [`README.md`](README.md) index first.** Two things in this file are wrong now:
 > (1) its CORE PREMISE, "build a plain global/incremental budget next", was REFUTED by
 > `../README_general_direction.md` §22: a plain shared pool self-averages to a per-row shadow-price rule
 > and COLLAPSES. The direction pivoted to commit-mode tasks (`../commit_schemes/`), and label-budget was

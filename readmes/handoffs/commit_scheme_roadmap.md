@@ -1,0 +1,48 @@
+# Handoff: the commit-scheme program (what we do now)
+
+This is the "what to work on and why" hub. The current work is **commit-mode tasks**, do not build plain
+global budget.
+
+## Why we are here (the global-budget dead end)
+
+- **§21** proposed a global/incremental feature budget (ration a shared pool across cases) to escape the
+  per-row memoryless dominance.
+- **§22 REFUTED it**: a plain shared pool over an iid stream self-averages into a per-row shadow-price rule
+  calibratable from peek data, so it COLLAPSES (all competent agents converge again). Plain global budget
+  is not a new scheme. **Do not build it.**
+- The pivot (§22): **commit-mode tasks**, STATE the policy interacts with whose take-backs are costly.
+  "Global budget" only survives WRAPPED in a commit mechanism (a global LABEL budget = the label-budget
+  scheme; a shared pool funding paid revision).
+
+The full per-scheme analyses live in **`../commit_schemes/`** (files 00-07, self-contained, tagged
+[PROVEN]/[ARGUMENT]/[CONJECTURE]); **`../commit_schemes/08_ordering_and_roadmap.md`** orders them and is the
+authoritative roadmap (its Background section is a standalone bootstrap brief). Read 08 before starting any
+scheme; do not re-derive the ordering.
+
+## The ordering (roadmap 08) and status
+
+**First picks:** items 1, 2, 3 go first (1 and 2 concurrent, 3 next); item 6 is contingent on 2.
+
+| # (08) | scheme | design file | status |
+|---|---|---|---|
+| 1 | Transcript-replay pre-test (grade the session, not just the artifact) | `commit_schemes/01_agent_time_commits.md` | first pick, **not run** -> [`scheme_1_transcript_replay.md`](scheme_1_transcript_replay.md) |
+| 2 | Label budget (active learning; buy training labels) | `commit_schemes/03_train_label_budget.md` | first pick, **BUILT, eliminated on strategy**, salvage in progress -> [`scheme_2_label_budget.md`](scheme_2_label_budget.md) |
+| 3 | Small-chunk information release (noisy incremental reads) | `commit_schemes/02_small_chunk_information_release.md` | first pick, **not built**, highest value-of-info -> [`scheme_3_small_chunk.md`](scheme_3_small_chunk.md) |
+| 6 | Paid revision (revise a past commit from the pool) | `commit_schemes/06_paid_revision.md` | contingent on item 2 passing its dominance gate |
+| 4 | Instrument installation (one-time unlock a feature group) | `commit_schemes/04_instrument_installation.md` | fix-first (proven inert as specified; needs a repair) |
+| 5 | Compounding state on TEP (actions change the later environment) | `commit_schemes/05_compounding_state.md` | heaviest, scaffold-only, last |
+
+The falsifier battery every scheme runs through pre-build: `commit_schemes/07_commit_gate_falsifiers.md`.
+
+## What to do next
+
+- **Continue label-budget salvage** (`scheme_2_label_budget.md`), the active workstream (a parallel chat
+  holds the config edits: `pool_per_class` to starve rare classes + hints removed so the strategy is
+  discovered, not telegraphed). The band already resolved (6.82); the open question is whether removing
+  the recipe handout produces real strategy diversity.
+- **Or start small-chunk** (`scheme_3_small_chunk.md`, item 3), the next first pick, its value of
+  information is the highest (it measures the noise floor / Delta-star that every scheme's #band_supports
+  accounting depends on).
+
+Judge every result with `band_method.md` (#band_supports), and pair it with a strategy-diversity check,
+the label-budget lesson: a resolvable band can still be one converged recipe.
