@@ -63,6 +63,66 @@ DATASETS = {
     "label-budget-covtype-open": dict(npz="worlds/label_budget/data/covtype_anon.npz", cfg="tasks_def.configs.label_budget_covtype_open", eval="303517c9-82fd-4641-84a2-cb4f88e41606"),
 }
 
+_T = "https://horizon.bespokelabs.ai/tasks/"
+_E = "https://horizon.bespokelabs.ai/evaluations/"
+
+# WORLD-OWNED presentation + human judgment per dataset (the SDK only formats these; it never
+# synthesizes a verdict line or a submit flag). task = bare record/row key; narrative = extra ## sections
+# the analyst writes (empty for simple rows). This is the seam's world half; the SDK band_report renders it.
+REPORT_META = {
+    "covtype": dict(task="budgeted-covtype", budget="6", metric="balanced-acc", task_url=_T+"4de1e511-7738-4889-bed3-a0a532b051e5",
+        submit="**YES**", verdict_line="WIDE band, endpoints ~7 LSD apart; the test resolves it despite the rarest class holding 266 rows",
+        evals=[("eval", _E+"babd012a-4ae2-4349-99cb-a030db3f4491")]),
+    "tep": dict(task="budgeted-tep", budget="15", metric="balanced-acc", task_url=_T+"36abdac8-4edd-4304-a48c-53933cd34f62",
+        submit="**YES**", verdict_line="WIDE band, endpoints ~8 LSD apart (synthetic + anonymized Tennessee Eastman Process; accepted for tasks)",
+        evals=[("eval", _E+"4d68f219-12f4-4f79-b61c-ee118052f610")]),
+    "unsw": dict(task="budgeted-unsw", budget="2", metric="balanced-acc", task_url=_T+"f8cc010b-53f1-4745-9481-146ff721bb50",
+        submit="NO", verdict_line="NARROW band, endpoints < 1 LSD apart (inside noise)",
+        evals=[("eval", _E+"27615e12-de7e-4b29-8ef7-900fe5870d0e")]),
+    "thyroid": dict(task="budgeted-thyroid", budget="3", metric="balanced-acc", task_url=_T+"c69cfa04-5416-486c-b25a-0b345eea4d98",
+        submit="NO", verdict_line="below the 3-tier bar (73-row rarest class inflates sigma); drop-TSH salvage tighter, it failed",
+        evals=[("orig", _E+"6fcbf032-d5ef-4b13-9040-1fbc44a7a1ca"), ("drop-TSH", _E+"32c9a8ca-6045-4629-a27c-a01e13f656b7")]),
+    "hydraulic": dict(task="budgeted-hydraulic", budget="3", metric="balanced-acc", task_url=_T+"2935f9b4-ea7f-4127-8b73-b91a7d4d6f24",
+        submit="NO", verdict_line="CEILING: gap test says endpoints indistinct; one cheap sensor solves it so the budget never binds",
+        evals=[("eval", _E+"f7318a3b-91ea-4456-a086-4d43bd449468")]),
+    "diabetes": dict(task="budgeted-diabetes", budget="3", metric="balanced-acc", task_url=_T+"bb7097fc-2984-4b74-8088-e200de4373f3",
+        submit="NO", verdict_line="NARROW band; readmission learnable from the cheap groups, expensive labs inert, converge ~0.62",
+        evals=[("eval", _E+"9f3883e9-5b3a-4e42-94a7-f170450101dd")]),
+    "derma": dict(task="budgeted-derma", budget="6", metric="balanced-acc", task_url=_T+"1a019b65-bfed-4779-8e00-e3982d3c7a51",
+        submit="NO", verdict_line="real spread, but the rarest test class = 4 rows buries it; unresolvable at any run count",
+        evals=[("eval", _E+"0dd9f969-ebd5-44ef-b891-aeeccfcd6502")]),
+    "label-budget-covtype": dict(task="label-budget-covtype", budget="L=2000", metric="balanced-acc", task_url=_T+"33da8224-530b-4641-a61a-7f1a1655b823",
+        submit="NO (strategy)", verdict_line="band VIABLE (wide), but ELIMINATED on strategy homogeneity (all 5 students wrote one recipe), not on the band",
+        evals=[("eval", _E+"03bdb135-2c06-4dd3-bd13-b3c813daee88")]),
+    "label-budget-covtype-open": dict(task="label-budget-covtype-open", budget="L=1500", metric="balanced-acc", task_url=_T+"e9ee3601-21ce-4162-b868-ab424d7932cd",
+        submit="**YES** (skill gradient)", verdict_line="the open-ended + rare-class-starved salvage of label-budget-covtype: a WIDE band AND a real, code-legible skill gradient (rare-class recall c1/c6, p_le0=0)",
+        evals=[("eval", _E+"303517c9-82fd-4641-84a2-cb4f88e41606")]),
+}
+
+
+def to_band_report(ds, r):
+    """Map an analyze() result dict `r` + the world's REPORT_META into the SDK BandReport schema. Pure
+    mapping, no math. verdict_line / submit / narrative are world-authored (REPORT_META); the SDK only
+    formats the numbers `r` already computed."""
+    from sdk.hor_utils.band_report import BandReport
+    m = REPORT_META.get(ds, {"task": ds, "budget": "", "metric": "balanced-acc",
+                             "submit": "SUBMIT" if r.get("verdict") == "SUBMIT" else "REJECT",
+                             "verdict_line": str(r.get("verdict", "")), "evals": [("eval", _E + r["eval"])],
+                             "task_url": ""})
+    d = dict(r)
+    d.update(dict(
+        task=m["task"], budget_label=m.get("budget", ""), metric=m.get("metric", "balanced-acc"),
+        band_supports=None if r.get("ceiling") else r.get("band_supports"),
+        n_runs=r.get("n_runs_with_preds", 0), n_nondegenerate=r.get("n_nondegenerate", 0),
+        sigma_source="stratified block-bootstrap on the median run",
+        verdict_line=m["verdict_line"], submit=m["submit"], narrative=m.get("narrative", {}),
+        links=dict(task_url=m.get("task_url", ""),
+                   evals=[{"label": lbl, "url": url} for lbl, url in m.get("evals", [])],
+                   record=f"tasks/{m['task']}.md",
+                   source_json=f"scratch/analysis/{r['eval'][:8]}/band_supports.json"),
+    ))
+    return BandReport.from_dict(d)
+
 
 def _cfg(mod_name):
     return types.SimpleNamespace(**importlib.import_module(mod_name).CONFIG)
@@ -224,16 +284,31 @@ def analyze(ds):
 
 
 def main(argv):
-    # Generic ANY-eval mode (a row not in DATASETS): --eval <id> --cfg <module> --npz <path> [--name X].
     args = argv[1:]
+
+    def _g(flag):
+        return args[args.index(flag) + 1] if flag in args else None
+
+    # World enforcement entry: validate THIS repo's row<->record invariant via the SDK (one command).
+    if "--validate" in args:
+        from sdk.hor_utils.band_report import validate
+        probs = validate(REPO / "readmes" / "README_submission.md", REPO / "readmes" / "tasks")
+        for pr in probs:
+            print(f"[{pr.kind}] {pr.task}: {pr.detail}")
+        print(f"{len(probs)} problem(s)." if probs else "invariant OK (row <-> record bijection holds).")
+        return 1 if any(pr.kind != "polarity_advisory" for pr in probs) else 0
+
+    emit = "--emit" in args   # opt-in: after computing, render the record + upsert the master-table row
+    records_dir = Path(_g("--records-dir") or (REPO / "readmes" / "tasks"))
+    table_path = Path(_g("--table") or (REPO / "readmes" / "README_submission.md"))
+
+    # Generic ANY-eval mode (a row not in DATASETS): --eval <id> --cfg <module> --npz <path> [--name X].
     if "--eval" in args:
-        def _g(flag):
-            return args[args.index(flag) + 1] if flag in args else None
         name = _g("--name") or "adhoc"
         DATASETS[name] = dict(npz=_g("--npz"), cfg=_g("--cfg"), eval=_g("--eval"))
         keys = [name]
     else:
-        keys = args or list(DATASETS)
+        keys = [a for a in args if not a.startswith("--")] or list(DATASETS)
     rows = []
     for ds in keys:
         r = analyze(ds)
@@ -250,6 +325,11 @@ def main(argv):
             if code:
                 (soldir / f"run{rn}.py").write_text(code)
         (out / "band_supports.json").write_text(json.dumps(r, indent=2))
+        if emit:
+            from sdk.hor_utils.band_report import write as write_band_report
+            report = to_band_report(ds, r)
+            write_band_report(report, records_dir, table_path)
+            print(f"   EMITTED record + upserted row -> {records_dir}/{report.task}.md")
         bs = "ceiling" if r["ceiling"] else f"{r['band_supports']:.2f}"
         print(f"{ds:22s} band {r['band'][0]:.3f}-{r['band'][1]:.3f} w={r['width']:.3f} "
               f"sig={r['sigma_abs']:.4f} LSD={r['lsd']:.4f} rare={r['rarest_count']:>5d} "
