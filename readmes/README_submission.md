@@ -39,6 +39,7 @@ policy (score 0, excluded from the band as a bonus floor).
 | budgeted-diabetes (3) | balanced-acc | 0.614–0.620 (+1 fail) | 0.006 | 1 / 1.32 | NARROW band; readmission learnable from the cheap groups, expensive labs inert, converge ~0.62 | NO | [task](https://horizon.bespokelabs.ai/tasks/bb7097fc-2984-4b74-8088-e200de4373f3) · [eval](https://horizon.bespokelabs.ai/evaluations/9f3883e9-5b3a-4e42-94a7-f170450101dd) · [record](tasks/budgeted-diabetes.md) |
 | budgeted-derma (6) | balanced-acc | 0.931–0.946 | 0.015 | 1 / 1.21 | real spread, but the rarest test class = **4 rows** (recall SE ≈ 0.18) buries it; unresolvable at ANY run count | NO | [task](https://horizon.bespokelabs.ai/tasks/1a019b65-bfed-4779-8e00-e3982d3c7a51) · [eval](https://horizon.bespokelabs.ai/evaluations/0dd9f969-ebd5-44ef-b891-aeeccfcd6502) · [record](tasks/budgeted-derma.md) |
 | label-budget-covtype (L=2000) | balanced-acc | 0.550–0.636 | 0.086 | 2 / **6.82** | band VIABLE (wide, endpoints ~6 LSD apart), but ELIMINATED on **strategy homogeneity** (all 5 students wrote one recipe), not on the band | NO (strategy) | [task](https://horizon.bespokelabs.ai/tasks/33da8224-530b-4641-a61a-7f1a1655b823) · [eval](https://horizon.bespokelabs.ai/evaluations/03bdb135-2c06-4dd3-bd13-b3c813daee88) · [record](tasks/label-budget-covtype.md) |
+| label-budget-covtype-open (L=1500) | balanced-acc | 0.499–0.573 | 0.075 | 4 / **7.82** | the open-ended (no-hints) + rare-class-starved salvage of the row above: a WIDE band AND a **real, code-legible skill gradient** (rare-class recall c1/c6, p_le0=0), 4 tiers occupied. Still one recipe family (skill gradient, not strategy diversity) | **YES** (skill gradient) | [task](https://horizon.bespokelabs.ai/tasks/e9ee3601-21ce-4162-b868-ab424d7932cd) · [eval](https://horizon.bespokelabs.ai/evaluations/303517c9-82fd-4641-84a2-cb4f88e41606) · [record](tasks/label-budget-covtype-open.md) |
 
 **Reading the verdicts.** Two tasks clear `#band_supports ≥ 3` and ship: covtype (8.06) and tep (9.14,
 synthetic + anonymized TEP, accepted for tasks). The rest are REJECT, and the corrected #band_supports shows WHY each is
@@ -47,7 +48,11 @@ its drop-TSH salvage tightened rather than widened it; hydraulic saturates at th
 real structure but a 4-instance test class makes it unresolvable at any N (the reason covtype, with a
 populous rarest class, is the keeper). label-budget-covtype is the exception: its band IS resolvable
 (6.82), but it is eliminated for a different reason, every student converged on the same acquisition
-recipe, so there is no strategy diversity to grade.
+recipe, so there is no strategy diversity to grade. Its salvage **label-budget-covtype-open** (hints
+stripped so the recipe is no longer handed over, `pool_per_class` starving the rare classes) then
+produced a real, resolvable **skill gradient** (#band_supports 7.82, driven by rare-class recall,
+legible in the submitted code), 4 tiers occupied, not one outlier. It is a skill gradient within one
+recipe family, not yet strategy diversity, but it is the first label-budget row that SUBMITs on merit.
 
 ## Correction note (this supersedes the old `levels` column)
 
@@ -78,8 +83,10 @@ is the proof).
 **Caveat (`README_general_direction.md` §21).** Even covtype's band comes from a **per-row / memoryless**
 budget, the acquisition optimization is identical every case, a near-dominated space. The label-budget
 scheme was the attempt at a non-dominated space; its band resolved (6.82) but the students converged on
-one strategy, so it too is eliminated (salvage in progress: sharpen rare-class starvation via
-`pool_per_class`, remove the recipe-telegraphing hints).
+one strategy. The salvage **label-budget-covtype-open** (sharpen rare-class starvation via
+`pool_per_class`, remove the recipe-telegraphing hints) succeeded on the band: a real skill gradient
+(#band_supports 7.82, rare-class recall, code-legible), still one recipe family rather than strategy
+diversity, the label-cost second axis (§21) is the remaining lever for genuine strategy diversity.
 
 ## Methodology (how a band is judged, and where the numbers come from)
 
