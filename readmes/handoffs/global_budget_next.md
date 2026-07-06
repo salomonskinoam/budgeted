@@ -1,9 +1,13 @@
 # Handoff: global/incremental budget (the next work) + current world state
 
-> **SUPERSEDED, read `HANDOFF.md` first.** That doc has the current state (post-refactor architecture,
-> the corrected #band_supports method, the label-budget outcome). This file is kept for its
-> global-budget build detail, but its "score-only levels / Phase 6 hosted probe" framing is obsolete
-> (band resolution is now computed locally from `predictions_b64` by `scratch/analysis/band_resolution.py`).
+> **SUPERSEDED, read `HANDOFF.md` first.** Two things in this file are wrong now:
+> (1) its CORE PREMISE, "build a plain global/incremental budget next", was REFUTED by
+> `../README_general_direction.md` §22: a plain shared pool self-averages to a per-row shadow-price rule
+> and COLLAPSES. The direction pivoted to commit-mode tasks (`../commit_schemes/`), and label-budget was
+> the one built (then eliminated on strategy). Do NOT build plain global budget.
+> (2) its "score-only levels / Phase 6 hosted probe" framing is obsolete, band resolution is now the
+> #band_supports method computed locally from `predictions_b64` by `scratch/analysis/band_resolution.py`.
+> Kept only as a historical record of the §21 idea before §22 corrected it.
 
 **For a NEW chat.** This is the continuation brief for the `budgeted` world after the salvage sweep.
 Read `../README_general_direction.md` §16–§21 and `../README_submission.md` first, then this.

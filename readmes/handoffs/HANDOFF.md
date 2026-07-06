@@ -68,34 +68,34 @@ building on it. A parallel chat is editing `tasks_def/configs/label_budget_covty
   student converges on one recipe (standardize → KMeans seed → balanced tree + uncertainty + rare-class
   boost + diversity → ensemble) → eliminated on strategy. **Salvage in a separate chat:** `pool_per_class`
   to sharpen rare-class starvation + remove the recipe-telegraphing hints so strategy must be discovered.
-- **Global / incremental budget** (§21): NOT started. THE next work.
+- **Plain global / incremental feature budget** (§21 proposed, **§22 REFUTED**): a shared feature-budget
+  pool across rows **self-averages** to a per-row shadow-price rule calibratable from peek data, so it
+  **collapses** (all competent agents converge again). It does NOT create a new scheme. **Do not build
+  plain global budget as a standalone.** This refutation is WHY the `commit_schemes/` effort exists.
 
-## THE NEXT WORK: global / incremental budget (§21)
+## THE DIRECTION: commit-mode tasks (§22), NOT plain global budget
 
-**Why.** Per-row budget is memoryless (fresh B each case → one dominant per-row policy → packing). A
-**shared budget pool across the whole test stream** makes early spending cost later cases, forcing
-RATIONING (spend on hard cases, save on easy). No dominant rationing rule → non-dominated space →
-allocation strategies separate. Data-light (any dataset with variable per-case difficulty works).
+§21 proposed a global/incremental budget; **§22 corrected it**: a plain shared pool over an iid stream
+self-averages into a per-row shadow-price rule (calibratable from peek), so path dependence washes out
+and it collapses. The real program is **commit-mode tasks**, STATE the policy interacts with whose
+take-backs are costly (§22, §22a). "Global budget" only survives WRAPPED in a commit mechanism (a global
+LABEL budget = the label-budget scheme; a shared pool funding paid revision). The full per-scheme
+analyses live in **`../commit_schemes/`**; **`../commit_schemes/08_ordering_and_roadmap.md`** orders them
+and is the real roadmap to follow.
 
-**What to build (on the NEW architecture):**
-1. **Drive loop** `worlds/budgeted/drive.py::run_mediated`: add a config `budget_mode` (`"per_row"` current
-   vs `"global"`). In global mode initialize `pool = B_total` ONCE, do not reset per row; each buy depletes
-   `pool`; a row may buy 0 (rationing). Fix the row order with a seed (document it, not gameable).
-   Expose remaining `pool` + `rows_left` in the per-row `{"cmd":"row",...}` message. (This is the ONE
-   scheme-specific file to touch; the sandbox / transport / scoring in `sdk/mediated/harness.py` are reused.)
-2. **Config** `tasks_def/configs/budgeted_covtype.py`: `budget_mode="global"`, `B_total` (start
-   `per_row_B × n_test`, then tighten so it binds across the stream). Budget is still THE lever.
-3. **Prompt** `worlds/budgeted/world.py::_PROMPT` (declarative template, rendered by
-   `sdk/mediated/prompt_builder.py`): describe the shared-pool contract ("one fixed total budget for the
-   whole batch, spend it where it matters"), production framing, no grading language.
-4. **Re-run covtype (and tep) in global mode**, compute #band_supports with `band_resolution.py`, compare
-   vs per-row. Success = higher #band_supports (a wider resolvable band). Consider whether it also needs a
-   strategy-diversity check (the label-budget lesson: a resolvable band can still be one converged recipe).
-5. Decide: a `budget_mode` flag in `worlds/budgeted` (lightest) vs a new `worlds/global_budget` world.
-   Flag is preferred unless the prompt/protocol diverge enough to warrant a separate world.
+Status against roadmap 08's ordering (do NOT re-derive; read 08):
+1. **Transcript-replay pre-test** (item 1) — not run.
+2. **Label-budget** (item 2) — BUILT + run (`worlds/label_budget`). Band resolves (6.82) but eliminated on
+   STRATEGY HOMOGENEITY; SALVAGE in progress in another chat (`pool_per_class` + hints removed).
+3. **Small-chunk information release** (item 3) — not built; highest cross-cutting value (it measures the
+   noise floor / Delta-star the whole battery leans on).
+4. **Paid-revision** (item 6) — contingent on label-budget passing its dominance gate.
+5. **Instrument-installation** (item 4) — fix-first (inert as specified; needs a repair).
+6. **TEP compounding** (item 5) — heaviest, scaffold-only.
 
-**Watch:** global mode must not leak cross-row information (policy inferring the test distribution from
-the pool). Values are revealed only on request, as now.
+**Next actionable:** the label-budget salvage (other chat), or start **small-chunk (item 3)** per the
+roadmap. Begin any of them from `../commit_schemes/08_ordering_and_roadmap.md` (its Background section is
+a self-contained bootstrap brief).
 
 ## Conventions (from `../../CLAUDE.md`, do not violate)
 
