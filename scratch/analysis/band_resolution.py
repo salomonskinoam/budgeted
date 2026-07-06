@@ -32,6 +32,7 @@ from pathlib import Path
 import numpy as np
 from sklearn.metrics import balanced_accuracy_score
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))   # repo root, so `sdk`/`tasks_def` import
 from sdk.mediated.data_view import DataView
 from sdk.hor_utils.noise import (
     contiguous_label_blocks, block_bootstrap_sigma, rank_resolution, paired_gap_sigma,
@@ -59,6 +60,7 @@ DATASETS = {
     "diabetes":    dict(npz="worlds/budgeted/data/diabetes_anon.npz", cfg="tasks_def.configs.budgeted_diabetes", eval="9f3883e9-5b3a-4e42-94a7-f170450101dd"),
     "derma":       dict(npz="worlds/budgeted/data/derma_anon.npz",    cfg="tasks_def.configs.budgeted_derma",    eval="0dd9f969-ebd5-44ef-b891-aeeccfcd6502"),
     "label-budget-covtype": dict(npz="worlds/label_budget/data/covtype_anon.npz", cfg="tasks_def.configs.label_budget_covtype", eval="03bdb135-2c06-4dd3-bd13-b3c813daee88"),
+    "label-budget-covtype-open": dict(npz="worlds/label_budget/data/covtype_anon.npz", cfg="tasks_def.configs.label_budget_covtype_open", eval="303517c9-82fd-4641-84a2-cb4f88e41606"),
 }
 
 
@@ -100,12 +102,19 @@ def _decode_runs(eval_id):
         gr = _loads(d.get("grade_result"))
         meta = gr.get("metadata") or {} if isinstance(gr, dict) else {}
         fb = _loads(meta.get("feedback"))
+        sub = fb.get("submission") if isinstance(fb, dict) else None   # the verbatim solution.py
         if not isinstance(fb, dict) or "predictions_b64" not in fb:
-            runs.append((rn, None, float(d.get("score") or 0.0)))     # failed / no policy
+            runs.append((rn, None, float(d.get("score") or 0.0), sub))  # failed / no policy
             continue
         p = np.frombuffer(base64.b64decode(fb["predictions_b64"]), dtype=np.int32)
-        runs.append((rn, p, float(fb.get("score", np.nan))))
+        runs.append((rn, p, float(fb.get("score", np.nan)), sub))
     return sorted(runs, key=lambda r: (r[0] is None, r[0]))
+
+
+def _recall_by_class(y_true, yp, classes):
+    """Per-class recall (fraction of each true class predicted correctly) for one run."""
+    return {int(c): round(float((yp[y_true == c] == c).mean()), 3) if (y_true == c).any() else 0.0
+            for c in classes}
 
 
 def analyze(ds):
@@ -118,8 +127,8 @@ def analyze(ds):
 
     # align each run to the matching y_true length; keep runs with predictions
     y_true = None
-    preds, scores, failed = [], [], 0
-    for rn, p, sc in raw:
+    preds, scores, metas, failed = [], [], [], 0
+    for rn, p, sc, sub in raw:
         if p is None:
             failed += 1
             continue
@@ -130,14 +139,17 @@ def analyze(ds):
         assert len(p) == len(y_true), f"mixed test sizes within eval {spec['eval']}"
         preds.append(p.astype(np.int64))
         scores.append(bacc(y_true, p))
+        metas.append((rn, sub))
 
     # non-degenerate band (drop collapsed/floor runs; they are a bonus floor, not the operating floor)
     keep = [i for i, s in enumerate(scores) if s > FLOOR]
     nd_scores = [scores[i] for i in keep]
     nd_preds = [preds[i] for i in keep]
+    nd_meta = [metas[i] for i in keep]
     order = np.argsort(nd_scores)
     nd_scores = [nd_scores[i] for i in order]
     nd_preds = [nd_preds[i] for i in order]
+    nd_meta = [nd_meta[i] for i in order]
 
     lo, hi = float(min(nd_scores)), float(max(nd_scores))
     width, mid = hi - lo, (hi + lo) / 2.0
@@ -178,7 +190,23 @@ def analyze(ds):
     else:
         verdict = "SUBMIT" if band_supports >= 3.0 else "REJECT"
 
+    # DRIVER: per-class recall for every non-degenerate run (sorted weak->strong), plus the
+    # best-minus-worst delta per class. This localizes WHICH classes carry the band, the skill axis
+    # the code comparison then has to explain. Submissions are dumped by main() for that comparison.
+    per_class_recall = [
+        {"run": nd_meta[i][0], "score": round(nd_scores[i], 4),
+         "recall": _recall_by_class(y_true, nd_preds[i], classes)}
+        for i in range(len(nd_preds))
+    ]
+    recall_delta = ({int(c): round(per_class_recall[-1]["recall"][int(c)]
+                                   - per_class_recall[0]["recall"][int(c)], 3) for c in classes}
+                    if len(nd_preds) > 1 else {})
+    submissions = {nd_meta[i][0]: nd_meta[i][1] for i in range(len(nd_meta))}
+
     return {
+        "_submissions": submissions,   # popped + dumped to solutions/ by main(); not persisted in json
+        "per_class_recall": per_class_recall,
+        "recall_delta_hi_minus_lo": recall_delta,
         "dataset": ds, "eval": spec["eval"],
         "n_runs_with_preds": len(preds), "n_failed": failed, "n_nondegenerate": len(nd_scores),
         "band": [lo, hi], "width": width, "mid": mid,
@@ -196,7 +224,16 @@ def analyze(ds):
 
 
 def main(argv):
-    keys = argv[1:] or list(DATASETS)
+    # Generic ANY-eval mode (a row not in DATASETS): --eval <id> --cfg <module> --npz <path> [--name X].
+    args = argv[1:]
+    if "--eval" in args:
+        def _g(flag):
+            return args[args.index(flag) + 1] if flag in args else None
+        name = _g("--name") or "adhoc"
+        DATASETS[name] = dict(npz=_g("--npz"), cfg=_g("--cfg"), eval=_g("--eval"))
+        keys = [name]
+    else:
+        keys = args or list(DATASETS)
     rows = []
     for ds in keys:
         r = analyze(ds)
@@ -206,11 +243,25 @@ def main(argv):
             continue
         out = REPO / "scratch" / "analysis" / r["eval"][:8]
         out.mkdir(parents=True, exist_ok=True)
+        # dump the verbatim solutions (the CODE half of the analysis) for side-by-side reading
+        subs = r.pop("_submissions", {})
+        soldir = out / "solutions"; soldir.mkdir(exist_ok=True)
+        for rn, code in subs.items():
+            if code:
+                (soldir / f"run{rn}.py").write_text(code)
         (out / "band_supports.json").write_text(json.dumps(r, indent=2))
         bs = "ceiling" if r["ceiling"] else f"{r['band_supports']:.2f}"
         print(f"{ds:22s} band {r['band'][0]:.3f}-{r['band'][1]:.3f} w={r['width']:.3f} "
               f"sig={r['sigma_abs']:.4f} LSD={r['lsd']:.4f} rare={r['rarest_count']:>5d} "
               f"#obs={r['n_observed']} #supports={bs:>7s}  {r['verdict']}")
+        # DRIVER table: per-class recall weak->strong + the hi-minus-lo delta (which classes carry the band)
+        cls = sorted(next(iter(r["per_class_recall"]), {}).get("recall", {}))
+        if cls:
+            print("   recall/class weak->strong  (" + " ".join(f"c{c}" for c in cls) + ")")
+            for pr in r["per_class_recall"]:
+                print(f"     run{pr['run']} {pr['score']:.3f} | " + " ".join(f"{pr['recall'][c]:.2f}" for c in cls))
+            print("   delta(hi-lo)/class: " + " ".join(f"c{c}:{r['recall_delta_hi_minus_lo'].get(c,0):+.2f}" for c in cls))
+            print(f"   solutions dumped -> {soldir}")
     return rows
 
 

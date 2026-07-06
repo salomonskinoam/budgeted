@@ -219,3 +219,20 @@ __marimo__/
 
 # Horizon venv (holds the API key in activate)
 horizon_env/
+
+# Horizon local artifacts (machine-local; not committed)
+.horizon-local/
+# Pulled rollouts: we commit the SLIMMED json (durable record the task analysis files point to),
+# never the multi-MB agent transcripts.
+.rollouts/**/*.md
+# Scratch experiments + regenerable analysis outputs (kept on disk, out of git; the durable analysis
+# lives in readmes/tasks/<task>.md + scratch/analysis/<eval>/band_supports.json + the slimmed rollouts).
+scratch/bakeoff/
+scratch/world_derisk/
+# Per-eval analysis dirs: keep ONLY the durable band_supports.json; the rest (dumped solutions, data
+# copies, cached preds, old run*.py verdicts) is regenerable from the slimmed rollouts + the tool.
+scratch/analysis/*/solutions/
+scratch/analysis/*/data_agent/
+scratch/analysis/*/run*
+scratch/analysis/*/*.npy
+scratch/analysis/*/verdict.json
