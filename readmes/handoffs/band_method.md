@@ -16,14 +16,19 @@ and highest run. Everything else (mean, std, #observed) is contrast at most.
 
 **Decision rule:** `#band_supports >= 3` = SUBMIT-viable; `<= 2` = REJECT; ceiling -> gap test.
 
-## The tool (source of truth)
+## The tooling (source of truth)
 
-`../../scratch/analysis/band_resolution.py` computes it from each run's stored `predictions_b64` (no
-policy replay, no hosted probe): decode preds -> reconstruct the graded test labels via `DataView` ->
-`block_bootstrap_sigma` (stratified by class) -> `resolution` (#band_supports) / `rank_resolution`
-(#observed) / `paired_gap_sigma` (gap). Writes `scratch/analysis/<eval8>/band_supports.json`, the source
-each per-row record transcribes. Reproducible; do not hand-recompute. SDK kernel: `sdk/hor_utils/{noise,resolution}.py`,
-method: `sdk/methodology/noise_floor.md` §11-14.
+- **`../../scratch/analysis/band_resolution.py`** computes the numbers from each run's stored
+  `predictions_b64` (no policy replay, no hosted probe): decode preds -> reconstruct the graded test labels
+  via `DataView` -> `block_bootstrap_sigma` (stratified by class) -> `resolution` (#band_supports) /
+  `rank_resolution` (#observed) / `paired_gap_sigma` (gap) -> `scratch/analysis/<eval8>/band_supports.json`.
+- **`--emit`** then RENDERS the per-row record and UPSERTS the master-table row via the SDK-owned
+  **`sdk/hor_utils/band_report.py`** (it owns the record/row format + an invariant validator; the analyst
+  authors only the verdict line + narrative in `band_resolution.py`'s `REPORT_META`). Records and the table
+  are GENERATED, not hand-transcribed, do not edit them by hand, re-run with `--emit`.
+- The end-to-end workflow is codified in the **`horizon-band-verdict`** skill
+  (`sdk/plugins/hor/skills/horizon-band-verdict/`).
+- SDK kernel: `sdk/hor_utils/{noise,resolution}.py`; method: `sdk/methodology/noise_floor.md` §11-14.
 
 ## Current submission set
 

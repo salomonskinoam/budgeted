@@ -36,12 +36,13 @@ Existing worlds: `worlds/budgeted/` (feature acquisition, `select_next`/`predict
 baseline oracle, src/venvs, tests) + `sdk create`. Both venvs (model + grader) carry the full package set
 with torch pinned CPU. `HorTask.materialize` has a generic `dockerfile_substitutions()` hook.
 
-## CAVEAT: the refactor is UNCOMMITTED
+## Status: committed and stable
 
-`sdk/mediated` (sdk submodule) + `worlds/budgeted` slimming + `worlds/label_budget` are tested
-(budgeted-covtype regression 4/4 tests, balanced accuracy reproduced; label-budget validated) but NOT yet
-committed. **Commit the sdk submodule first, then record it in the parent, before building on it.** A
-parallel chat is editing `tasks_def/configs/label_budget_covtype*.py` (the label-budget salvage).
+The shared `sdk/mediated` framework + the thin `worlds/budgeted` + `worlds/label_budget` are COMMITTED and
+behavior-preserving (budgeted-covtype regression 4/4 tests, balanced accuracy reproduced; label-budget
+built + salvaged). `sdk` is a git SUBMODULE: changes there are committed INSIDE the submodule, then the
+pointer is bumped in the parent (as the `refactor(budgeted)` and sdk band-report commits already did).
+Build new worlds on top of this.
 
 ## Conventions (from `../../CLAUDE.md`, do not violate)
 
