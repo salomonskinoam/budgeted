@@ -5,3 +5,5 @@ from tasks_def import budgeted_derma  # noqa: F401  importing registers the inst
 from tasks_def import budgeted_hydraulic  # noqa: F401  importing registers the instance
 from tasks_def import budgeted_diabetes  # noqa: F401  importing registers the instance
 from tasks_def import budgeted_covtype  # noqa: F401  importing registers the instance
+from tasks_def import label_budget_covtype  # noqa: F401  importing registers the instance
+from tasks_def import label_budget_covtype_open  # noqa: F401  importing registers the instance
