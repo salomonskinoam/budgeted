@@ -1,95 +1,79 @@
-"""BudgetedWorld: the budgeted-acquisition world's HorTask subclass.
+"""BudgetedWorld: the feature-acquisition world as a thin MediatedWorld.
 
-The student ships a Policy class (solution.py); the grader DRIVES it at grade time (verify.py runs
-the mediated select/reveal/predict loop under budget). So there is no separate produced artifact and
-no grade-time "produce" run of the deliverable: the deliverable IS the artifact, and the real work
-happens in verify. The grade orchestration (gate -> benchmark -> score) lives in HorTask.
+All the generic plumbing (sandbox, JSON transport, scoring, data vendoring, prehook projection, prompt
+scaffolding, HorTask grade orchestration) lives in sdk/mediated/; the grade-time drive loop is in
+drive.py (kept apart so this file needs no ML deps, the orchestration Python imports it). This file
+supplies the declarative surface: the Policy interface (select_next + predict), which files the student
+sees (train+val features AND labels), the per-case `budget` scalar, and the production prompt.
+See sdk/mediated/world_base.py.
 """
 from __future__ import annotations
-import ast
-import json
-from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from sdk.hor_grading_result import GradingResult
-from sdk.hor_task import HorTask
+from sdk.mediated.world_base import MediatedWorld
 
-from worlds.budgeted import config_world
-from worlds.budgeted.paths import (
-    SOLUTION_SCRIPT, VERIFY_FILE, BENCH_RESULT, PYTEST_REPORT, TASK_LOG,
-)
-from worlds.budgeted.prompt_builder import PromptBuilder
+_PROMPT = """\
+You are building a classifier for a production system where acquiring each input feature has a cost,
+and every case must be handled under a fixed acquisition budget. For each case the system starts
+with nothing observed and repeatedly asks your policy which feature to acquire next; acquiring a
+feature reveals its value and spends its cost. Once your policy stops (or the budget is exhausted),
+it predicts the class from the features it chose to acquire. Build the policy that classifies as
+accurately as possible under the budget (measured as balanced accuracy across cases, so every one of
+the {n_classes} classes matters equally). Spending the budget well is the whole problem: features
+differ in cost, and which ones are worth acquiring depends on the case.
+
+## Data
+Training data lives under {data_dir}/ as NumPy .npy arrays, fully observed (no budget at training
+time, the budget only applies in production per the loop above):
+- train_features.npy (n_cases x n_features), train_labels.npy (integer class ids 0..{n_classes_m1})
+- val_features.npy, val_labels.npy (same layout) for your own model selection
+{data_dir}/meta.json gives the exact n_features, n_classes, the per-feature acquisition cost vector
+`costs` (feature id -> cost), and the per-case `budget`.
+
+## Deliverable
+Write a Python file to {script_path} defining a `Policy` class with this interface:
+
+    class Policy:
+        def __init__(self, data_dir):
+            # data_dir is {data_dir}. Train here on train/val (fully observed).
+        def select_next(self, observed: dict, budget_left: float) -> int | None:
+            # observed maps already-acquired feature-id -> its value. Return the next feature id to
+            # acquire (its cost must be <= budget_left), or None to stop acquiring for this case.
+        def predict(self, observed: dict) -> int:
+            # return the predicted class id given the features acquired for this case.
+
+The system loads **only this one file**: `{script_path}` must be entirely self-contained. Put the whole
+policy (any helpers, any trained weights loaded at construction) inside it, do not split it across
+modules or write other files the policy imports at runtime, only `{script_path}` is deployed and
+anything else is discarded. The system constructs `Policy(data_dir)` once, then for each case calls
+`select_next` repeatedly (revealing each acquired feature's value, charging its cost, never letting you
+exceed the budget) and finally `predict`. Do not read anything outside {data_dir}/.
+
+## Environment
+{environment_info}
+{hints}"""
 
 
-class BudgetedWorld(HorTask):
-    WORLD_CONFIG = config_world.CONFIG
-    INJECTED_PACKAGES = ("worlds", "tasks_def")
+class BudgetedWorld(MediatedWorld):
+    def world_slug(self) -> str:
+        return "budgeted"
 
-    def build_prompt(self) -> str:
-        return PromptBuilder(self.config, self.source_dir).build()
+    def policy_methods(self) -> tuple:
+        return ("select_next", "predict")
 
-    def grade(self, transcript: str = "") -> GradingResult:
-        """Ride the per-run test predictions into the feedback string (world-side; SDK stays generic).
+    def projection_spec(self) -> Dict[str, Any]:
+        return {
+            "student_files": ["train_features.npy", "train_labels.npy",
+                              "val_features.npy", "val_labels.npy"],
+            "student_meta_keys": ["n_features", "n_classes", "budget", "costs", "feature_ids"],
+            "forbidden": {"test_features.npy", "test_labels.npy"},
+        }
 
-        A hosted VALIDATION surfaces only GradingResult.feedback (it drops `details`/subscores), but the
-        paired rank_resolution / gap test needs each run's per-row predictions. verify.py wrote
-        `predictions_b64` into the benchmark result (-> result.details on the scored path); copy it into
-        the feedback JSON so a hosted run returns it, to be read back during recovery. A run that
-        produced no predictions (failed / no policy -> no details) is returned unchanged."""
-        result = super().grade(transcript)
-        if result.details and "predictions_b64" in result.details:
-            feedback = json.loads(result.feedback)
-            feedback["predictions_b64"] = result.details["predictions_b64"]
-            result.feedback = json.dumps(feedback)
-        return result
+    def meta_extras(self, z) -> Dict[str, Any]:
+        # Budget is config-controlled (the difficulty knob) and overrides the npz scalar; fall back to
+        # the npz only if the config omits it.
+        cfg_budget = self.config.budget if "budget" in self.config else None
+        return {"budget": float(cfg_budget if cfg_budget is not None else z["budget"])}
 
-    def dockerfile_template(self) -> Path:
-        return Path(__file__).resolve().parent / "Dockerfile"
-
-    def _produce(self) -> dict:
-        """No grade-time run of the deliverable: the student's Policy is not a runnable script, it is
-        driven by verify.py. If solution.py is present, pass produce as a no-op; verify does the work.
-        Absent solution.py -> the artifact check downstream fails the run (the noop case, scored 0)."""
-        return {"returncode": 0, "timed_out": False, "duration_s": 0.0,
-                "stdout": "policy present; graded by the mediated loop in verify", "stderr": ""}
-
-    def artifact_gates(self, build: Dict[str, Any]) -> Optional[str]:
-        """Pre-benchmark gate: the deliverable is a syntactically valid module defining a Policy class
-        with select_next + predict. Checked by AST (no import): the Policy imports student ML libs
-        (xgboost/torch) that live in model_venv, not the grader venv, so we must NOT import it here.
-        Its real behavior is exercised by the sandboxed mediated run in verify."""
-        if not SOLUTION_SCRIPT.exists():
-            return f"no policy at {SOLUTION_SCRIPT}"
-        try:
-            tree = ast.parse(SOLUTION_SCRIPT.read_text())
-        except SyntaxError as e:
-            return f"solution.py has a syntax error: {e}"
-        cls = next((n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == "Policy"), None)
-        if cls is None:
-            return "solution.py does not define a Policy class"
-        methods = {n.name for n in cls.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
-        for m in ("select_next", "predict"):
-            if m not in methods:
-                return f"Policy missing method {m}"
-        return None
-
-    def deliverable_path(self) -> Path:
-        return SOLUTION_SCRIPT
-
-    def produced_artifact_path(self) -> Path:
-        return SOLUTION_SCRIPT
-
-    def verify_file(self) -> Path:
-        return VERIFY_FILE
-
-    def bench_result_path(self) -> Path:
-        return BENCH_RESULT
-
-    def pytest_report_path(self) -> Path:
-        return PYTEST_REPORT
-
-    def task_log_path(self) -> Path:
-        return TASK_LOG
-
-    def upload_probe_file(self) -> Optional[Path]:
-        return None
+    def prompt_template(self) -> str:
+        return _PROMPT
