@@ -1,8 +1,11 @@
 # Handoff: scheme 2, label budget / active learning (first pick)
 
-**Roadmap 08 item 2. Status: BUILT and run, ELIMINATED on strategy homogeneity, SALVAGE in progress.**
+**Roadmap 08 item 2. Status: BUILT; first version ELIMINATED on strategy; OPEN salvage SHIPS.** The
+`label-budget-covtype` reference (L=2000, hints on) was eliminated on strategy homogeneity, but the
+salvage **`label-budget-covtype-open`** (hints stripped + `pool_per_class` rare-class starvation, L=1500)
+now SUBMITs: **#band_supports 7.82, 4 tiers occupied, a real code-legible skill gradient.** All committed.
 Design: `../commit_schemes/03_train_label_budget.md`. Build: `worlds/label_budget/{world,drive,policy_runner}.py`,
-task `tasks/label-budget-covtype/`, config `tasks_def/configs/label_budget_covtype.py`.
+tasks `tasks/label-budget-covtype{,-open}/`, configs `tasks_def/configs/label_budget_covtype{,_open}.py`.
 
 ## The scheme
 
@@ -24,22 +27,27 @@ different strategy. Record: `../tasks/label-budget-covtype.md`.
 **Root cause:** the config hints TELEGRAPHED the recipe (they named uncertainty / coreset / rare-class /
 spend-curve), and covtype is redundant enough that the recipe pays off uniformly. Zero discovery gap.
 
-## Salvage in progress (a parallel chat holds these config edits)
+## Salvage RESULT (label-budget-covtype-open, eval `303517c9`, L=1500)
 
-`tasks_def/configs/label_budget_covtype.py` now: **L lowered to 1500** (each pick counts more),
-**`pool_per_class`** sharpening rare-class starvation (2 dominant anon classes stay huge, the other 5
-capped to 1000 rows so naive labeling almost never reaches them while a rare-class hunter can), and
-**`hints: []`** (no recipe handout, strategy must be discovered). A `label_budget_covtype_open` variant
-also exists. Goal: force real strategy diversity.
+The salvage worked. Config: **`hints: []`** (no recipe handout, strategy must be discovered) +
+**`pool_per_class`** starving 5 classes to 1000 rows (2 dominant anon classes stay huge) so naive
+labeling almost never reaches the rare ones. Result: band 0.499 -> 0.573, **#band_supports 7.82**,
+**#observed 4** (vs the reference's 2), gap p_le0 0.0. The weak->strong axis is a genuine, code-legible
+skill: ~92% of the band is rare-class recall (c1 +0.31, c6 +0.14), and each rank step maps to a concrete
+code choice (full-pool scan + rarest-first selection + reweighting at the top; random-subsample /
+60%-random / single-model at the bottom). Full driver table + code diff: `../tasks/label-budget-covtype-open.md`.
 
-## Next action
+**Shape (the honest caveat):** this is a SKILL GRADIENT within one recipe family, not strategy DIVERSITY.
+Every student still wrote the standard active-learning recipe; they differ in execution quality on the
+rare classes. That is a valid, resolvable RL reward signal (real skill, not seed luck, not one outlier),
+and it SHIPS. It is not two genuinely-different strategies.
 
-Re-run 5 student evals on the salvage config, then judge with BOTH:
-1. `band_method.md` (#band_supports), and
-2. a **strategy-diversity check** (pull the 5 solutions via `horizon rollouts pull`, tabulate what each
-   did, as in the record). A high #band_supports is NOT enough; the recipe must actually differ across
-   students. If it still converges, the scheme is dead on covtype, consider a less-redundant dataset
-   (03 Alternatives: Sensorless Drive, Letter Recognition) or accept elimination.
+## Next action / open question
 
-Note: item 6 (paid revision, `../commit_schemes/06_paid_revision.md`) is contingent on this scheme
-passing its dominance gate; it has no content until label budget bands with real strategy diversity.
+- The open variant SHIPS as-is (skill gradient). Decide whether that is enough, or whether to pursue true
+  strategy DIVERSITY, which would need the deferred **label-cost second axis** (03 P15e: cheap vs expensive
+  labels create a rationing tradeoff with no dominant rule) or a less-redundant dataset (03 Alternatives:
+  Sensorless Drive, Letter Recognition).
+- Item 6 (paid revision, `../commit_schemes/06_paid_revision.md`) is unlocked in principle now that the
+  label budget bands, but it targets strategy diversity, revisit only if pursuing the second axis.
+- The label-budget scheme is otherwise DONE for this pass; the two remaining first picks are items 1 and 3.

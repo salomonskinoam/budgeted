@@ -26,7 +26,7 @@ scheme; do not re-derive the ordering.
 | # (08) | scheme | design file | status |
 |---|---|---|---|
 | 1 | Transcript-replay pre-test (grade the session, not just the artifact) | `commit_schemes/01_agent_time_commits.md` | first pick, **not run** -> [`scheme_1_transcript_replay.md`](scheme_1_transcript_replay.md) |
-| 2 | Label budget (active learning; buy training labels) | `commit_schemes/03_train_label_budget.md` | first pick, **BUILT, eliminated on strategy**, salvage in progress -> [`scheme_2_label_budget.md`](scheme_2_label_budget.md) |
+| 2 | Label budget (active learning; buy training labels) | `commit_schemes/03_train_label_budget.md` | first pick, **BUILT; hint-on version eliminated on strategy; OPEN salvage SHIPS (7.82, skill gradient)** -> [`scheme_2_label_budget.md`](scheme_2_label_budget.md) |
 | 3 | Small-chunk information release (noisy incremental reads) | `commit_schemes/02_small_chunk_information_release.md` | first pick, **not built**, highest value-of-info -> [`scheme_3_small_chunk.md`](scheme_3_small_chunk.md) |
 | 6 | Paid revision (revise a past commit from the pool) | `commit_schemes/06_paid_revision.md` | contingent on item 2 passing its dominance gate |
 | 4 | Instrument installation (one-time unlock a feature group) | `commit_schemes/04_instrument_installation.md` | fix-first (proven inert as specified; needs a repair) |
@@ -36,13 +36,14 @@ The falsifier battery every scheme runs through pre-build: `commit_schemes/07_co
 
 ## What to do next
 
-- **Continue label-budget salvage** (`scheme_2_label_budget.md`), the active workstream (a parallel chat
-  holds the config edits: `pool_per_class` to starve rare classes + hints removed so the strategy is
-  discovered, not telegraphed). The band already resolved (6.82); the open question is whether removing
-  the recipe handout produces real strategy diversity.
-- **Or start small-chunk** (`scheme_3_small_chunk.md`, item 3), the next first pick, its value of
-  information is the highest (it measures the noise floor / Delta-star that every scheme's #band_supports
+- **Label budget (item 2) is DONE for this pass:** `label-budget-covtype-open` SHIPS as a real skill
+  gradient (7.82). The only open extension is true strategy DIVERSITY (vs the current skill gradient),
+  which needs the deferred label-cost second axis, optional. See `scheme_2_label_budget.md`.
+- **Start small-chunk (item 3)** (`scheme_3_small_chunk.md`), the remaining first pick with the highest
+  value of information (it measures the noise floor / Delta-star that every scheme's #band_supports
   accounting depends on).
+- **Or transcript-replay (item 1)** (`scheme_1_transcript_replay.md`), the cheap independent pre-test,
+  still not run.
 
 Judge every result with `band_method.md` (#band_supports), and pair it with a strategy-diversity check,
 the label-budget lesson: a resolvable band can still be one converged recipe.

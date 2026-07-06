@@ -3,10 +3,11 @@
 Continuation briefs for the `budgeted` world, one concern per file. Start here, then open the one you
 need. Design bible: `../README_general_direction.md`. Scheme roadmap: `../commit_schemes/08_ordering_and_roadmap.md`.
 
-**One-line state.** Submission set decided on #band_supports: **budgeted-covtype (8.06) and budgeted-tep
-(9.14) SHIP**; five datasets buried; the current program is **commit-mode tasks** (`../commit_schemes/`),
-of which **label-budget was built and eliminated on strategy** (salvage in progress). Plain global
-budget is DEAD (§22, it collapses); do not build it.
+**One-line state.** Submission set decided on #band_supports: **budgeted-covtype (8.06), budgeted-tep
+(9.14), and label-budget-covtype-open (7.82) SHIP**; five datasets buried; the current program is
+**commit-mode tasks** (`../commit_schemes/`). The first commit scheme, **label-budget (item 2), was built,
+its hint-on version eliminated on strategy, and its OPEN salvage (hints stripped + rare-class starvation)
+now ships as a real skill gradient.** Plain global budget is DEAD (§22, it collapses); do not build it.
 
 | handoff | read when |
 |---|---|

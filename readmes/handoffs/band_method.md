@@ -37,8 +37,10 @@ method: `sdk/methodology/noise_floor.md` §11-14.
 | budgeted-derma | 1 / 1.21 | NO (4-row test class -> unresolvable) |
 | budgeted-hydraulic | 1 / ceiling | NO (gap p_le0 0.39) |
 | label-budget-covtype | 2 / **6.82** | NO (band viable, eliminated on STRATEGY, not band) |
+| label-budget-covtype-open | 4 / **7.82** | **YES** (salvage of the row above: real code-legible skill gradient) |
 
-Full table + one durable record per row: `../README_submission.md` -> `../tasks/<task>.md`.
+Full table + one durable record per row: `../README_submission.md` -> `../tasks/<task>.md`. **Three ship:**
+covtype, tep, label-budget-covtype-open.
 
 **The label-budget lesson (carry into every scheme):** a band can have HIGH #band_supports and still be a
 bad task if the students converge on ONE strategy. Pair the band check with a strategy-diversity check
