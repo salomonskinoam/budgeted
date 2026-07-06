@@ -1,5 +1,10 @@
 # Handoff: global/incremental budget (the next work) + current world state
 
+> **SUPERSEDED, read `HANDOFF.md` first.** That doc has the current state (post-refactor architecture,
+> the corrected #band_supports method, the label-budget outcome). This file is kept for its
+> global-budget build detail, but its "score-only levels / Phase 6 hosted probe" framing is obsolete
+> (band resolution is now computed locally from `predictions_b64` by `scratch/analysis/band_resolution.py`).
+
 **For a NEW chat.** This is the continuation brief for the `budgeted` world after the salvage sweep.
 Read `../README_general_direction.md` §16–§21 and `../README_submission.md` first, then this.
 

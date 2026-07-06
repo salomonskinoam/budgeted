@@ -1,0 +1,42 @@
+{
+  "dataset": "thyroid",
+  "eval": "6fcbf032-d5ef-4b13-9040-1fbc44a7a1ca",
+  "n_runs_with_preds": 5,
+  "n_failed": 0,
+  "n_nondegenerate": 5,
+  "band": [
+    0.7471891238436633,
+    0.8448304405300955
+  ],
+  "width": 0.09764131668643217,
+  "mid": 0.7960097821868795,
+  "scores_sorted": [
+    0.7472,
+    0.7984,
+    0.7999,
+    0.8029,
+    0.8448
+  ],
+  "n_test": 3428,
+  "n_classes": 3,
+  "rarest_class": 2,
+  "rarest_count": 73,
+  "per_class_counts": {
+    "0": 3178,
+    "1": 177,
+    "2": 73
+  },
+  "sigma_abs": 0.022038009407097884,
+  "op": 0.7998716669193682,
+  "lsd": 0.06233290358244736,
+  "band_supports": 2.56644903533625,
+  "n_observed": 3,
+  "ceiling": false,
+  "gap": {
+    "gap": 0.0976,
+    "sigma_gap": 0.0234,
+    "ratio": 4.18,
+    "p_le0": 0.0
+  },
+  "verdict": "REJECT"
+}

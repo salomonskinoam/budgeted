@@ -1,0 +1,45 @@
+{
+  "dataset": "unsw",
+  "eval": "27615e12-de7e-4b29-8ef7-900fe5870d0e",
+  "n_runs_with_preds": 5,
+  "n_failed": 0,
+  "n_nondegenerate": 5,
+  "band": [
+    0.7222216956622128,
+    0.7325343104313181
+  ],
+  "width": 0.010312614769105277,
+  "mid": 0.7273780030467655,
+  "scores_sorted": [
+    0.7222,
+    0.731,
+    0.7312,
+    0.7317,
+    0.7325
+  ],
+  "n_test": 4500,
+  "n_classes": 6,
+  "rarest_class": 3,
+  "rarest_count": 251,
+  "per_class_counts": {
+    "0": 1056,
+    "1": 435,
+    "2": 798,
+    "3": 251,
+    "4": 293,
+    "5": 1667
+  },
+  "sigma_abs": 0.00748589382802109,
+  "op": 0.7311741108740595,
+  "lsd": 0.02117330515614494,
+  "band_supports": 1.4870573910428122,
+  "n_observed": 2,
+  "ceiling": false,
+  "gap": {
+    "gap": 0.0103,
+    "sigma_gap": 0.005,
+    "ratio": 2.0434,
+    "p_le0": 0.017
+  },
+  "verdict": "REJECT"
+}

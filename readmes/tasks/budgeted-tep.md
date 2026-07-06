@@ -1,61 +1,53 @@
-# budgeted-tep (anonymized TEP, mediated acquisition)
+# budgeted-tep: band-resolution record
 
-**Verdict: PENDING (real band, materially wider on re-run).** The latest eval has a genuine floor (2/5
-produced no working policy, no infra error), a top that beats the oracle, and three successes spread
-across ~0.18 with large adjacent gaps, a graded ladder, not just fail-vs-solve. Rigorous `n_levels`
-being computed.
+**Verdict: SUBMIT (#band_supports 9.14).** tep is synthetic + anonymized Tennessee Eastman Process
+(a 22-fault process-control benchmark). Its band clears the bar with room to spare and the owner accepts
+it for tasks, so it ships. It also doubles as the end-to-end proof of the mediated-acquisition pipeline
+(grader drives the student `Policy` under a per-case budget).
 
-| metric | band (raw) | spread | levels | oracle | noop | submit |
-|---|---|---|---|---|---|---|
-| balanced-acc | 0.672–0.851 | 0.179 | ≥3 (top two 11.4σ apart) | 0.741 | ~0.045 | PENDING |
+## Band
 
-Latest eval `fe32868b` (5 runs). First eval `2eb7b2e7` (7 runs) was tighter: 0.717–0.806, spread 0.089,
-~2 tiers.
+Eval `4d68f219`, 3 runs produced predictions, 2 runs FAILED (no working policy, score 0).
 
-[task](https://horizon.bespokelabs.ai/tasks/36abdac8-4edd-4304-a48c-53933cd34f62) ·
-[run](https://horizon.bespokelabs.ai/evaluations/fe32868b-9861-4485-863e-d93c534615a5) ·
-batch `0067d7a3-4134-40d9-a4eb-c29faeeb24fe`
+Scores sorted (non-degenerate): **0.6516 · 0.7962 · 0.824**.
+- Band: **0.652 → 0.824**, width **0.172**.
+- #observed = **3** (all three successes occupy distinct tiers).
 
-## The task
-The student ships a `Policy` class (`select_next` / `predict`); the grader DRIVES it per test case under
-a per-case acquisition budget, revealing only the feature values the policy requests, sandboxed as the
-`model` user, with labels kept grader-private. Data: **anonymized TEP** (52 features `f0..f51`, costs 1
-cheap / 3 expensive, per-case budget 15, 22 fault classes). Scored on balanced accuracy over the hidden
-test split. Full design + anti-hack model: `README_general_direction.md` §20.
+**Excluded: 2 failed runs (score 0).** They produced no policy (`errored=0`, a real failure mode, not
+infra). Zero is a bonus floor, not the operating floor, the band is measured across the three runs
+that actually operated, so the failed pair is excluded from width/#band_supports.
 
-## The band (spread only, per CLAUDE.md)
-Latest eval `fe32868b`, 5 runs: **fail · fail · 0.672 · 0.758 · 0.851**.
-- **Floor:** 2/5 produced no working policy (scored 0, `errored=0` so not infra failures) — a real
-  failure mode, the true bottom of the band.
-- **Top:** 0.851 **> oracle 0.741** and **> the prior eval's 0.806** — students built better
-  acquisition policies than our reference (masking-XGBoost + greedy value-of-information).
-- **The successes are graded, not clustered.** 0.672 / 0.758 / 0.851, adjacent gaps 0.086 and 0.093,
-  both well above ~2·SE (test-set balanced-acc SE ≈ 0.048) → distinct tiers, plus the 0-floor.
-  Score-only, that reads ~3–4 tiers vs the first eval's ~2.
+## Noise floor (this row's calculation)
 
-First eval `2eb7b2e7`, 7 runs: error · 0.717 · 0.730 · 0.769 · 0.782 · 0.806 (spread 0.089, the five
-successes clustered within noise, ~2 tiers). The re-run roughly doubled the spread and separated the
-middle.
+- Metric: **balanced accuracy** over the hidden test split.
+- Test set: **2381 rows across 22 fault classes**.
+- Class counts are near-uniform (`per_class_counts`): 21 classes at 108 rows, one at 113. The
+  **rarest class = 108 rows**, and balanced accuracy is a mean of per-class recalls, so the rarest
+  class caps how finely σ resolves.
+- **σ_abs = 0.00749**, a stratified bootstrap on the operating run (0.7962), resampling within class so
+  the per-class recall variance (dominated by the 108-row classes) sets the scale.
+- **LSD = z·√2·σ_abs = 2·√2·0.00749 = 0.0212.** Two scores are distinguishable when farther apart
+  than one LSD.
 
-## Read
-Non-degenerate (noop ~0.045, top 0.851, failure real at 2/5) and the top beats our reference — a
-genuine task, and now with graded discrimination rather than fail-vs-solve. Levers still available if
-we want it wider (§14 / §20, cheap config changes): tighter budget (6–9 vs 15, budget is now a one-line
-config knob), or an acquisition-only variant (freeze the predictor) to isolate routing skill.
+## #band_supports vs #observed
 
-## Rigorous levels (paired resampling, done)
-The grader emits per-run `predictions_b64` (`verify.py` + `world.grade`); because we hold the deployed
-test split, `scratch/analysis/recover_analyze.py` reconstructs each run's policy (all files it wrote,
-not just solution.py), replays it offline through the mediated loop, and feeds predictions to
-`sdk/hor_utils/noise.py`. Replay is faithful, run 2 = 0.8528 (hosted 0.8507), run 3 = 0.7583 (hosted
-0.7584). `paired_gap_sigma` on those two: **gap 0.094, 11.4σ, P(gap≤0)=0**, genuinely distinct tiers,
-not test noise. run 4 (hosted 0.672) used a multi-file solution, which the single-file contract now
-forbids, so it is excluded here and counts only under the old grader. Net: two success tiers proven
-11σ-separated (plus run 4 and the 2/5 zero-floor under the old grader), a graded ladder, not
-fail-vs-solve.
+- **#band_supports = 1 + width/LSD = 1 + 0.172/0.0212 = 9.14.**
+- Endpoints are ~**8 LSDs apart** (0.172/0.0212 ≈ 8.1): the lowest and highest operating runs sit far
+  apart, a **WIDE** band, not converged.
+- **#observed = 3**, the runs cluster into 3 occupied tiers inside that wide interval. High
+  #band_supports with low #observed = wide band, clustered occupancy, not convergence.
+- Gap test on the endpoints: gap 0.1724, σ_gap 0.0086, **ratio 20.1**, P(gap≤0)=0, the spread is real,
+  not test noise.
 
-## Leak / integrity
-Budget enforced grader-side (never exceeded, asserted); test features + labels stay in `/data_root`
-(700); `predict` only ever sees acquired features; student code runs sandboxed as `model` (no
-`/data_root`); TEP feature/class anonymization defeats benchmark memorization. Oracle validates at
-0.741 end-to-end, so the grader is correct.
+## Verdict
+
+#band_supports 9.14 ≥ 3 ⇒ **SUBMIT**. The band is wide (endpoints ~8 LSDs apart) and the spread is
+statistically real (gap test P(gap≤0)=0). tep is a synthetic + anonymized process-control benchmark;
+the owner accepts it for tasks, so it ships. It also serves as the end-to-end proof that the mediated
+per-case acquisition loop grades correctly and separates policies.
+
+## Links
+
+- Task: https://horizon.bespokelabs.ai/tasks/36abdac8-4edd-4304-a48c-53933cd34f62
+- Eval: https://horizon.bespokelabs.ai/evaluations/4d68f219-12f4-4f79-b61c-ee118052f610
+- Numbers: `scratch/analysis/4d68f219/band_supports.json`
