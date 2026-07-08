@@ -1,4 +1,6 @@
 # Claude working notes — budgeted
+Always look at the sdk docs and skills, they define methodology.
+
 
 Design bible: `readmes/README_general_direction.md` (what makes a band, the falsifiers, the
 acquisition-spread gate, why we landed on the mediated-grader task). Read it before touching the world.

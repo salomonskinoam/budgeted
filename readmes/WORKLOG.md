@@ -1,5 +1,17 @@
 # Worklog (newest on top)
 
+- Readme reorg (option A, multi-world) + multi-world band-report generator. Bibles (durable reference)
+  live at repo-top `readmes/` (`README_general_direction`, `band_method`, `world_architecture`); session
+  handoffs at `readmes/ai/handoffs/`; each world now OWNS its submission table + task records under
+  `worlds/<world>/readmes/` (budgeted + label_budget split out of the old combined repo-top doc; records
+  git-moved, not regenerated). `band_resolution.py` gained a per-dataset `world` field and routes
+  emit/records/table per world (`_world_paths`); `--validate` now checks EVERY world (passes). Mirrors
+  `../imputation`'s self-contained-world layout. All cross-links fixed. Scheme 3 (small-chunk) DROPPED.
+  New `worlds/drift/readmes/README_concept.md` scaffolds (brief only, not built) the next direction: a
+  concept-drift online-active-learning world (design-bible §23) composing scheme 7 (streaming
+  delayed-label learning) + scheme 6 (paid revision). SDK submodule bumped f8cb6b4 -> eb21fca (band_report
+  analysis seam).
+
 - Submission table re-decided on #band_supports (the RESOLUTION CAPACITY), not observed levels. The
   old `levels` column reported `rank_resolution.n_levels` (where runs LANDED) and used it as if it were
   capacity, wrong metric. #band_supports = `resolution` tiers = 1 + spread/LSD = tiers the band can hold

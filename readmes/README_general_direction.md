@@ -769,3 +769,73 @@ escapes; (3) TEP consequence dynamics (scaffold-only). Each is gated on its pre-
 The suggested ORDERING of all surviving work items, with the reasoning, per-item requirements,
 risks, rewards, and band-certainty arguments, is `commit_schemes/08_ordering_and_roadmap.md`
 (its Background section is the bootstrap brief for new agents). Owner decision pending.
+
+## 23. Scheme-7 brainstorm: streaming test-time learning (+ retroactive revision) (owner idea 2026-07-07)
+
+Owner proposal: a scheme where the student ships a policy that must LEARN online during the graded
+test stream, rather than shipping a frozen peek-trained model. Two variations: (a) update the model
+as rows stream by; (b) also revise predictions on already-seen rows once the model has improved.
+
+The make-or-break (unresolved, do NOT build before answering): **where does the online learning
+signal come from?** By §22b's front-loading principle, anything computable from peek is dominated by
+doing it in `__init__`, so an online update only adds skill if it consumes a STREAM-REVEALED resource
+that resists front-loading. Two honest sources:
+- **Delayed labels**: after predicting row t, the grader later reveals the true label of an earlier
+  row (delayed supervision). Real stream-revealed signal, genuinely online. But it introduces label
+  leakage into the stream, a large departure from the hard peek constraint (peek = the only labels);
+  the metric and the leakage schedule must be designed so the score still measures adaptation skill,
+  not memorization.
+- **Unsupervised distribution shift**: no labels stream in, p(x) drifts and the student adapts
+  unsupervised. Weaker, and largely front-loadable if the shift is inferable from peek. Likely inert.
+
+The literal "show the student no data" reading COLLIDES with the hard constraint that peek is always
+fully available (§22, §12). The viable reading is: peek available, but the test stream is SHIFTED and
+carries delayed feedback, so the skill is online adaptation to that shift.
+
+**Why this matters for scheme 6 (paid revision).** Scheme 6's central risk is that revision is INERT:
+a rational first prediction already used all row-local info, so revising only helps if NEW information
+bearing on the old row arrives, and balanced accuracy is arrival-mix invariant (§22b). Delayed-label
+streaming is exactly the missing ingredient: it gives the model a legitimate reason to have improved
+since the first prediction, which makes retroactive revision (variation b) load-bearing instead of
+inert. So scheme 7 and scheme 6 COMPOSE: 7 supplies the stream-revealed learning signal, 6 supplies
+the mechanism to act on it retroactively. Worth pre-testing the delayed-label signal before committing
+to plain scheme 6 on its own.
+
+**Sharpening (owner, same day): concept drift is the clean signal source.** Make a SERIOUS
+distribution shift between peek and the test stream, then stream in delayed labels. Now the
+frozen peek-trained model is genuinely STALE at test time (real headroom), the delayed labels reveal
+the drift (stream-revealed, front-loading-resistant), and adapting is exactly online active learning
+under concept drift, a studied, bandable problem. Skill ladder: ignore the drift (ship frozen model)
+< detect-and-retrain < windowed/forgetting adaptation. This is the cleanest form of scheme 7 and it is
+what makes scheme 6's revision load-bearing (adapt, then fix the stale early-stream predictions). Its
+own make-or-break (the alive regime): the drift must be PARTIALLY structured, preparable from peek
+(build a drift detector / online learner in `__init__`) but with a realization only knowable from
+stream feedback. Fully peek-predictable drift front-loads (inert); fully random drift is unpreparable
+(no skill). Use prequential evaluation (predict row t, reveal its label delayed by k rows) so no policy
+can just echo the revealed label.
+
+**Two open concerns to resolve before building this family:**
+- **A change budget is ABILITY, not REASON.** "Give peek, then allow a change budget at test time" only
+  bands if there is a REASON to change (new info bearing on the old decision). The drift + delayed labels
+  supplies that reason; a bare change budget without new info repeats scheme 6's inertness risk.
+- **Strategy legibility (RESOLVED, owner 2026-07-07): not a real constraint.** Earlier worry was that
+  online learning hides strategy in runtime weights. Owner correction: the student SHIPS the code that
+  creates and updates the weights, and that code IS the strategy, fully legible and comparable across
+  the 5 solutions. The weights are just its output. No need to limit where the model lives. Residual is
+  only the ordinary seed-luck check (identical code, different seed), already part of the diversity pass.
+
+**Real concept-drift datasets (no synthetic; synthetic drift makes low-quality tasks).** Candidates
+with GENUINE drift on REAL data, ranked for this world (needs multi-class resolution + tabular
+features + structured-but-stream-revealed drift):
+- **Gas Sensor Array Drift (UCI), lead candidate.** 13,910 samples, 128 features, 6 gas classes,
+  collected over 36 months in 10 batches; the drift is REAL sensor aging/poisoning (the dataset exists
+  to study it). Multi-class (resolution), tabular (fits the acquisition world), natural peek=early
+  batches / test=later batches temporal shift. Check rarest-class count per batch before committing.
+- **INSECTS (Souza et al., USP).** Real optical insect-wing sensor, drift from temperature; ships in
+  abrupt / gradual / incremental / recurring variants, ~6 classes. Purpose-built real drift benchmark.
+- **Rialto (10 classes).** Real timelapse of 10 buildings, drift from lighting/weather over 20 days.
+- **Weaker (binary, limits resolution): Electricity/Elec2, NOAA Weather.** Classic real drift but 2
+  classes cap the band levels.
+- **Note on covtype:** its streaming "drift" is SPATIAL row ordering (p(x) shifts by region), not true
+  temporal concept drift (p(y|x) stable), so it is a weak drift substrate despite being our current
+  flagship. Prefer a genuine temporal-drift set (Gas Sensor) for scheme 7.

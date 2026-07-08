@@ -49,19 +49,27 @@ def bacc(yt, yp):
     return balanced_accuracy_score(yt, yp)
 
 
-# dataset -> npz, config module (for the view), task-id, primary eval-id
+# dataset -> world, npz, config module (for the view), task-id, primary eval-id.
+# `world` routes the emitted record + table to worlds/<world>/readmes/ (multi-world: each world owns its
+# own submission table + records; the SDK band_report is world-agnostic and takes the paths explicitly).
 DATASETS = {
-    "covtype":     dict(npz="worlds/budgeted/data/covtype_anon.npz",  cfg="tasks_def.configs.budgeted_covtype",  eval="babd012a-4ae2-4349-99cb-a030db3f4491"),
-    "tep":         dict(npz="worlds/budgeted/data/tep_anon.npz",      cfg="tasks_def.configs.budgeted_tep",      eval="4d68f219-12f4-4f79-b61c-ee118052f610"),
-    "unsw":        dict(npz="worlds/budgeted/data/unsw_anon.npz",     cfg="tasks_def.configs.budgeted_unsw",     eval="27615e12-de7e-4b29-8ef7-900fe5870d0e"),
-    "thyroid":     dict(npz="worlds/budgeted/data/thyroid_anon.npz",  cfg="tasks_def.configs.budgeted_thyroid",  eval="6fcbf032-d5ef-4b13-9040-1fbc44a7a1ca"),
-    "thyroid-dropTSH": dict(npz="worlds/budgeted/data/thyroid_anon.npz", cfg="tasks_def.configs.budgeted_thyroid", eval="32c9a8ca-6045-4629-a27c-a01e13f656b7"),
-    "hydraulic":   dict(npz="worlds/budgeted/data/hydraulic_anon.npz", cfg="tasks_def.configs.budgeted_hydraulic", eval="f7318a3b-91ea-4456-a086-4d43bd449468"),
-    "diabetes":    dict(npz="worlds/budgeted/data/diabetes_anon.npz", cfg="tasks_def.configs.budgeted_diabetes", eval="9f3883e9-5b3a-4e42-94a7-f170450101dd"),
-    "derma":       dict(npz="worlds/budgeted/data/derma_anon.npz",    cfg="tasks_def.configs.budgeted_derma",    eval="0dd9f969-ebd5-44ef-b891-aeeccfcd6502"),
-    "label-budget-covtype": dict(npz="worlds/label_budget/data/covtype_anon.npz", cfg="tasks_def.configs.label_budget_covtype", eval="03bdb135-2c06-4dd3-bd13-b3c813daee88"),
-    "label-budget-covtype-open": dict(npz="worlds/label_budget/data/covtype_anon.npz", cfg="tasks_def.configs.label_budget_covtype_open", eval="303517c9-82fd-4641-84a2-cb4f88e41606"),
+    "covtype":     dict(world="budgeted", npz="worlds/budgeted/data/covtype_anon.npz",  cfg="tasks_def.configs.budgeted_covtype",  eval="babd012a-4ae2-4349-99cb-a030db3f4491"),
+    "tep":         dict(world="budgeted", npz="worlds/budgeted/data/tep_anon.npz",      cfg="tasks_def.configs.budgeted_tep",      eval="4d68f219-12f4-4f79-b61c-ee118052f610"),
+    "unsw":        dict(world="budgeted", npz="worlds/budgeted/data/unsw_anon.npz",     cfg="tasks_def.configs.budgeted_unsw",     eval="27615e12-de7e-4b29-8ef7-900fe5870d0e"),
+    "thyroid":     dict(world="budgeted", npz="worlds/budgeted/data/thyroid_anon.npz",  cfg="tasks_def.configs.budgeted_thyroid",  eval="6fcbf032-d5ef-4b13-9040-1fbc44a7a1ca"),
+    "thyroid-dropTSH": dict(world="budgeted", npz="worlds/budgeted/data/thyroid_anon.npz", cfg="tasks_def.configs.budgeted_thyroid", eval="32c9a8ca-6045-4629-a27c-a01e13f656b7"),
+    "hydraulic":   dict(world="budgeted", npz="worlds/budgeted/data/hydraulic_anon.npz", cfg="tasks_def.configs.budgeted_hydraulic", eval="f7318a3b-91ea-4456-a086-4d43bd449468"),
+    "diabetes":    dict(world="budgeted", npz="worlds/budgeted/data/diabetes_anon.npz", cfg="tasks_def.configs.budgeted_diabetes", eval="9f3883e9-5b3a-4e42-94a7-f170450101dd"),
+    "derma":       dict(world="budgeted", npz="worlds/budgeted/data/derma_anon.npz",    cfg="tasks_def.configs.budgeted_derma",    eval="0dd9f969-ebd5-44ef-b891-aeeccfcd6502"),
+    "label-budget-covtype": dict(world="label_budget", npz="worlds/label_budget/data/covtype_anon.npz", cfg="tasks_def.configs.label_budget_covtype", eval="03bdb135-2c06-4dd3-bd13-b3c813daee88"),
+    "label-budget-covtype-open": dict(world="label_budget", npz="worlds/label_budget/data/covtype_anon.npz", cfg="tasks_def.configs.label_budget_covtype_open", eval="303517c9-82fd-4641-84a2-cb4f88e41606"),
 }
+
+
+def _world_paths(world):
+    """(records_dir, table_path) for a world, each world owning its own readmes/ (mirrors imputation)."""
+    base = REPO / "worlds" / world / "readmes"
+    return base / "tasks", base / "README_submission.md"
 
 _T = "https://horizon.bespokelabs.ai/tasks/"
 _E = "https://horizon.bespokelabs.ai/evaluations/"
@@ -289,23 +297,29 @@ def main(argv):
     def _g(flag):
         return args[args.index(flag) + 1] if flag in args else None
 
-    # World enforcement entry: validate THIS repo's row<->record invariant via the SDK (one command).
+    # World enforcement entry: validate EVERY world's row<->record invariant via the SDK (one command).
     if "--validate" in args:
         from sdk.hor_utils.band_report import validate
-        probs = validate(REPO / "readmes" / "README_submission.md", REPO / "readmes" / "tasks")
-        for pr in probs:
-            print(f"[{pr.kind}] {pr.task}: {pr.detail}")
-        print(f"{len(probs)} problem(s)." if probs else "invariant OK (row <-> record bijection holds).")
+        worlds = sorted({spec["world"] for spec in DATASETS.values()})
+        probs = []
+        for world in worlds:
+            rdir, tpath = _world_paths(world)
+            wp = validate(tpath, rdir)
+            for pr in wp:
+                print(f"[{world}] [{pr.kind}] {pr.task}: {pr.detail}")
+            probs.extend(wp)
+        print(f"{len(probs)} problem(s)." if probs else "invariant OK across all worlds (row <-> record bijection holds).")
         return 1 if any(pr.kind != "polarity_advisory" for pr in probs) else 0
 
-    emit = "--emit" in args   # opt-in: after computing, render the record + upsert the master-table row
-    records_dir = Path(_g("--records-dir") or (REPO / "readmes" / "tasks"))
-    table_path = Path(_g("--table") or (REPO / "readmes" / "README_submission.md"))
+    emit = "--emit" in args   # opt-in: after computing, render the record + upsert the world's table row
+    # Explicit --records-dir/--table override the per-world default (used by adhoc/testing only).
+    records_override = _g("--records-dir")
+    table_override = _g("--table")
 
-    # Generic ANY-eval mode (a row not in DATASETS): --eval <id> --cfg <module> --npz <path> [--name X].
+    # Generic ANY-eval mode (a row not in DATASETS): --eval <id> --cfg <module> --npz <path> [--name X] [--world W].
     if "--eval" in args:
         name = _g("--name") or "adhoc"
-        DATASETS[name] = dict(npz=_g("--npz"), cfg=_g("--cfg"), eval=_g("--eval"))
+        DATASETS[name] = dict(world=_g("--world") or "budgeted", npz=_g("--npz"), cfg=_g("--cfg"), eval=_g("--eval"))
         keys = [name]
     else:
         keys = [a for a in args if not a.startswith("--")] or list(DATASETS)
@@ -327,6 +341,10 @@ def main(argv):
         (out / "band_supports.json").write_text(json.dumps(r, indent=2))
         if emit:
             from sdk.hor_utils.band_report import write as write_band_report
+            w_records, w_table = _world_paths(DATASETS[ds]["world"])
+            records_dir = Path(records_override) if records_override else w_records
+            table_path = Path(table_override) if table_override else w_table
+            records_dir.mkdir(parents=True, exist_ok=True)
             report = to_band_report(ds, r)
             write_band_report(report, records_dir, table_path)
             print(f"   EMITTED record + upserted row -> {records_dir}/{report.task}.md")

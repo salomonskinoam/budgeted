@@ -18,7 +18,7 @@ and highest run. Everything else (mean, std, #observed) is contrast at most.
 
 ## The tooling (source of truth)
 
-- **`../../scratch/analysis/band_resolution.py`** computes the numbers from each run's stored
+- **`../scratch/analysis/band_resolution.py`** computes the numbers from each run's stored
   `predictions_b64` (no policy replay, no hosted probe): decode preds -> reconstruct the graded test labels
   via `DataView` -> `block_bootstrap_sigma` (stratified by class) -> `resolution` (#band_supports) /
   `rank_resolution` (#observed) / `paired_gap_sigma` (gap) -> `scratch/analysis/<eval8>/band_supports.json`.
@@ -44,8 +44,10 @@ and highest run. Everything else (mean, std, #observed) is contrast at most.
 | label-budget-covtype | 2 / **6.82** | NO (band viable, eliminated on STRATEGY, not band) |
 | label-budget-covtype-open | 4 / **7.82** | **YES** (salvage of the row above: real code-legible skill gradient) |
 
-Full table + one durable record per row: `../README_submission.md` -> `../tasks/<task>.md`. **Three ship:**
-covtype, tep, label-budget-covtype-open.
+Full table + records live PER-WORLD under `worlds/<world>/readmes/README_submission.md` +
+`worlds/<world>/readmes/tasks/<task>.md` (worlds: budgeted, label_budget). `band_resolution.py` routes
+each task to its world's paths; `--validate` checks every world. **Three ship:** covtype, tep,
+label-budget-covtype-open.
 
 **The label-budget lesson (carry into every scheme):** a band can have HIGH #band_supports and still be a
 bad task if the students converge on ONE strategy. Pair the band check with a strategy-diversity check

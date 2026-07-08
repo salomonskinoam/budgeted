@@ -1,7 +1,7 @@
 # Handoff: scheme 1, transcript-replay pre-test (first pick)
 
 **Roadmap 08 item 1. Status: NOT RUN.** The cheapest first pick, no new world mechanic. Design:
-`../commit_schemes/01_agent_time_commits.md` (step 6 has the full procedure).
+`../../commit_schemes/01_agent_time_commits.md` (step 6 has the full procedure).
 
 ## The idea
 

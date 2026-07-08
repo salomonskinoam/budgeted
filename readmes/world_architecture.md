@@ -44,7 +44,7 @@ built + salvaged). `sdk` is a git SUBMODULE: changes there are committed INSIDE 
 pointer is bumped in the parent (as the `refactor(budgeted)` and sdk band-report commits already did).
 Build new worlds on top of this.
 
-## Conventions (from `../../CLAUDE.md`, do not violate)
+## Conventions (from `../CLAUDE.md`, do not violate)
 
 - Report **spread + #band_supports** (see `band_method.md`); mean/std are irrelevant.
 - **No heavy local compute** (training, sweeps, replay, big dataset builds/loads) without explicit
