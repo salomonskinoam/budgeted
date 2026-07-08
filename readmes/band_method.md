@@ -21,11 +21,16 @@ and highest run. Everything else (mean, std, #observed) is contrast at most.
 - **`../scratch/analysis/band_resolution.py`** computes the numbers from each run's stored
   `predictions_b64` (no policy replay, no hosted probe): decode preds -> reconstruct the graded test labels
   via `DataView` -> `block_bootstrap_sigma` (stratified by class) -> `resolution` (#band_supports) /
-  `rank_resolution` (#observed) / `paired_gap_sigma` (gap) -> `scratch/analysis/<eval8>/band_supports.json`.
-- **`--emit`** then RENDERS the per-row record and UPSERTS the master-table row via the SDK-owned
-  **`sdk/hor_utils/band_report.py`** (it owns the record/row format + an invariant validator; the analyst
-  authors only the verdict line + narrative in `band_resolution.py`'s `REPORT_META`). Records and the table
-  are GENERATED, not hand-transcribed, do not edit them by hand, re-run with `--emit`.
+  `rank_resolution` (#observed) / `paired_gap_sigma` (gap). The **source of truth is TASK-KEYED**:
+  `worlds/<world>/analysis/<task>/band_supports.json` holds task metadata + a LIST of evals, each with
+  its own stats (a multi-eval task like thyroid = orig + drop-TSH is ONE json). Which evals belong to a
+  task + the world-authored verdict/submit/budget live in `tasks_def/band_manifest.py` (task-keyed);
+  `best_observed` comes from the task config. NEVER eval-hash-keyed, NEVER in readme plaintext.
+- **`--emit`** writes that json, a `STRATEGY.md` stub (the human analysis seam), and RENDERS the record
+  (`worlds/<world>/analysis/<task>/../readmes/tasks/<task>.md`) + UPSERTS the per-world master-table row
+  via the SDK-owned **`sdk/hor_utils/band_report.py`** (`TaskBandReport`/`EvalStats`; it owns the
+  record/row format + an invariant validator). Records + tables are GENERATED, do not hand-edit, re-emit.
+  `--migrate` was the one-time free regroup of the old eval-hashed jsons into the task-keyed truth.
 - The end-to-end workflow is codified in the **`horizon-band-verdict`** skill
   (`sdk/plugins/hor/skills/horizon-band-verdict/`).
 - SDK kernel: `sdk/hor_utils/{noise,resolution}.py`; method: `sdk/methodology/noise_floor.md` §11-14.

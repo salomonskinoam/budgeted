@@ -1,40 +1,37 @@
 # label-budget-covtype: band-resolution record
 
-**Verdict: ELIMINATED (strategy homogeneity, NOT band).** The band is viable and resolvable (#band_supports 6.82, well past the ≥3 rule), but all five students wrote the identical recipe, so the task is eliminated on strategy homogeneity, not on the band.
+**Verdict: band VIABLE (wide, endpoints ~6 LSD apart), but ELIMINATED on strategy homogeneity (all 5 students wrote one recipe), not on the band**
 
 ## Band
 
-- eval `03bdb135-2c06-4dd3-bd13-b3c813daee88`, 5 runs, 0 failed, 5 non-degenerate.
-- scores sorted: [0.550, 0.623, 0.625, 0.631, 0.636].
-- band 0.550 → 0.636, width 0.086.
+- Eval: `03bdb135-2c06-4dd3-bd13-b3c813daee88`; 5 runs, 5 non-degenerate, 0 failed / 0 excluded.
+- Scores sorted: 0.5496, 0.6232, 0.6250, 0.6312, 0.6358.
+- Band (worst to best): 0.5496 to 0.6358.
+- Width (spread): 0.0862.
 
-## Noise floor
+## Noise floor (this row's calculation)
 
-- metric: balanced accuracy.
-- n_test 56250 rows, 7 classes (natural covtype imbalance; per-class 266 / 1986 / 20509 / 27428 / 1681 / 3461 / 919).
-- rarest class 0 = 266 rows caps σ (levels are limited by the rarest class).
-- σ_abs 0.0052 (stratified bootstrap).
-- LSD 0.0148.
+- Metric: balanced-acc.
+- Test: 56250 rows across 7 classes. per-class 266 / 1986 / 20509 / 27428 / 1681 / 3461 / 919
+- Rarest test class (0 = 266 rows) caps resolution (recall SE ~ sqrt(p(1-p)/266)).
+- sigma_abs = 0.005242.
+- LSD = z*sqrt(2)*sigma_abs (z=2) = 0.01483.
 
 ## #band_supports vs #observed
 
-- #band_supports = 1 + width/LSD = 1 + 0.086/0.0148 = **6.82**. This is the endpoint distance: the lowest run (0.550) and the highest (0.636) are ~5.8 LSDs apart, i.e. a **WIDE** band.
-- gap check confirms the endpoints are genuinely distinct: ratio 14.5, p_le0 0.0.
-- #observed = **2**: the runs occupy only 2 tiers. Four runs are clustered high near ~0.63, one run sits far below at 0.55, and the ~5 tiers between them are EMPTY. This is a wide band with TOP-HEAVY / clustered occupancy.
-- This is explicitly **NOT convergence.** A high #band_supports is the opposite of converged; the width is real, the middle is just empty.
+- #band_supports = 1 + width/LSD = 1 + 0.0862/0.01483 = **6.82**. endpoints ~6 LSDs apart.
+- #observed = 2 (the tiers the runs actually occupy).
+- Gap test: gap = 0.0862, sigma_gap = 0.0060, ratio = 14.47, p_le0 = 0.000.
 
-## Why eliminated (strategy, not band)
+## Verdict
 
-The band passes the ≥3 rule, so on band mechanics alone it would SUBMIT. It is eliminated on STRATEGY HOMOGENEITY instead. A separate analysis of the 5 submitted solutions found all five wrote the same recipe:
-
-standardize features → KMeans diversity seed → class-weight-balanced tree model → uncertainty + inverse-frequency rare-class boost + greedy/KMeans diversity downselect → batched rounds → strong/ensemble final model.
-
-The four top runs are trim variants of that one recipe. The low run (0.55) is the SAME recipe with an over-aggressive rare-class quota, i.e. a bug in the recipe, not a different strategy. So there is no genuine strategy diversity: the wide band is one weak variant sitting below a pack, not a skill ladder. Because every student converges on the same strategy, the task is eliminated.
-
-Salvage of this scheme is being pursued separately: sharpen rare-class starvation via `pool_per_class` and remove the hint-telegraphed recipe so students must find the strategy rather than copy it.
+- Rule: #band_supports >= 3 = SUBMIT-viable; <= 2 = REJECT (at the ceiling, the gap test decides).
+- #band_supports = 6.82.
+- band VIABLE (wide, endpoints ~6 LSD apart), but ELIMINATED on strategy homogeneity (all 5 students wrote one recipe), not on the band
 
 ## Links
 
-- task: https://horizon.bespokelabs.ai/tasks/33da8224-530b-4641-a61a-7f1a1655b823
-- eval: https://horizon.bespokelabs.ai/evaluations/03bdb135-2c06-4dd3-bd13-b3c813daee88
-- data: `scratch/analysis/03bdb135/band_supports.json`
+- Task: https://horizon.bespokelabs.ai/tasks/33da8224-530b-4641-a61a-7f1a1655b823
+- Eval: https://horizon.bespokelabs.ai/evaluations/03bdb135-2c06-4dd3-bd13-b3c813daee88
+- Analysis (strategy, human-authored, updated independently): `../analysis/label-budget-covtype/STRATEGY.md`
+- Source JSON: `../analysis/label-budget-covtype/band_supports.json`

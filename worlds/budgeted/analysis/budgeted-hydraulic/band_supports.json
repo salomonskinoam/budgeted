@@ -1,0 +1,69 @@
+{
+  "task": "budgeted-hydraulic",
+  "world": "budgeted",
+  "metric": "balanced-acc",
+  "budget_label": "3",
+  "best_observed": 1.0,
+  "verdict_line": "CEILING: gap test says endpoints indistinct; one cheap sensor solves it so the budget never binds",
+  "submit": "NO",
+  "primary_eval": "f7318a3b-91ea-4456-a086-4d43bd449468",
+  "evals": [
+    {
+      "eval_id": "f7318a3b-91ea-4456-a086-4d43bd449468",
+      "label": "",
+      "band": [
+        0.990990990990991,
+        0.993993993993994
+      ],
+      "band_note": "",
+      "spread": 0.0030030030030030463,
+      "mid": 0.9924924924924925,
+      "sigma_abs": 0.0050952363691029075,
+      "lsd": 0.014411504753363955,
+      "band_supports": null,
+      "observed": 1,
+      "ceiling": true,
+      "gap": {
+        "gap": 0.003,
+        "sigma_gap": 0.0029,
+        "ratio": 1.0238,
+        "p_le0": 0.392
+      },
+      "sigma_source": "",
+      "n_runs": 5,
+      "n_nondegenerate": 5,
+      "n_failed": 0,
+      "scores_sorted": [
+        0.991,
+        0.991,
+        0.991,
+        0.991,
+        0.994
+      ],
+      "n_test": 497,
+      "n_classes": 3,
+      "per_class_counts": {
+        "0": 111,
+        "1": 275,
+        "2": 111
+      },
+      "rarest_class": 0,
+      "rarest_count": 111,
+      "per_class_recall": [],
+      "recall_delta": {}
+    }
+  ],
+  "links": {
+    "task_url": "https://horizon.bespokelabs.ai/tasks/2935f9b4-ea7f-4127-8b73-b91a7d4d6f24",
+    "evals": [
+      {
+        "label": "",
+        "url": "https://horizon.bespokelabs.ai/evaluations/f7318a3b-91ea-4456-a086-4d43bd449468"
+      }
+    ],
+    "record": "tasks/budgeted-hydraulic.md",
+    "analysis": "../analysis/budgeted-hydraulic/STRATEGY.md",
+    "source_json": "../analysis/budgeted-hydraulic/band_supports.json"
+  },
+  "narrative": {}
+}

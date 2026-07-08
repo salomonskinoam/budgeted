@@ -1,0 +1,119 @@
+{
+  "task": "budgeted-thyroid",
+  "world": "budgeted",
+  "metric": "balanced-acc",
+  "budget_label": "3",
+  "best_observed": 1.0,
+  "verdict_line": "below the 3-tier bar (73-row rarest class inflates sigma); drop-TSH salvage TIGHTER, it failed",
+  "submit": "NO",
+  "primary_eval": "6fcbf032-d5ef-4b13-9040-1fbc44a7a1ca",
+  "evals": [
+    {
+      "eval_id": "6fcbf032-d5ef-4b13-9040-1fbc44a7a1ca",
+      "label": "orig",
+      "band": [
+        0.7471891238436633,
+        0.8448304405300955
+      ],
+      "band_note": "",
+      "spread": 0.09764131668643217,
+      "mid": 0.7960097821868795,
+      "sigma_abs": 0.022038009407097884,
+      "lsd": 0.06233290358244736,
+      "band_supports": 2.56644903533625,
+      "observed": 3,
+      "ceiling": false,
+      "gap": {
+        "gap": 0.0976,
+        "sigma_gap": 0.0234,
+        "ratio": 4.18,
+        "p_le0": 0.0
+      },
+      "sigma_source": "",
+      "n_runs": 5,
+      "n_nondegenerate": 5,
+      "n_failed": 0,
+      "scores_sorted": [
+        0.7472,
+        0.7984,
+        0.7999,
+        0.8029,
+        0.8448
+      ],
+      "n_test": 3428,
+      "n_classes": 3,
+      "per_class_counts": {
+        "0": 3178,
+        "1": 177,
+        "2": 73
+      },
+      "rarest_class": 2,
+      "rarest_count": 73,
+      "per_class_recall": [],
+      "recall_delta": {}
+    },
+    {
+      "eval_id": "32c9a8ca-6045-4629-a27c-a01e13f656b7",
+      "label": "drop-TSH",
+      "band": [
+        0.7282303813721268,
+        0.7479403933542211
+      ],
+      "band_note": "",
+      "spread": 0.019710011982094322,
+      "mid": 0.738085387363174,
+      "sigma_abs": 0.014397241963105297,
+      "lsd": 0.04072154968998111,
+      "band_supports": 1.4840192019250107,
+      "observed": 1,
+      "ceiling": false,
+      "gap": {
+        "gap": 0.0197,
+        "sigma_gap": 0.0148,
+        "ratio": 1.3319,
+        "p_le0": 0.102
+      },
+      "sigma_source": "",
+      "n_runs": 5,
+      "n_nondegenerate": 5,
+      "n_failed": 0,
+      "scores_sorted": [
+        0.7282,
+        0.736,
+        0.7417,
+        0.7454,
+        0.7479
+      ],
+      "n_test": 3428,
+      "n_classes": 3,
+      "per_class_counts": {
+        "0": 3178,
+        "1": 177,
+        "2": 73
+      },
+      "rarest_class": 2,
+      "rarest_count": 73,
+      "per_class_recall": [],
+      "recall_delta": {}
+    }
+  ],
+  "links": {
+    "task_url": "https://horizon.bespokelabs.ai/tasks/c69cfa04-5416-486c-b25a-0b345eea4d98",
+    "evals": [
+      {
+        "label": "orig",
+        "url": "https://horizon.bespokelabs.ai/evaluations/6fcbf032-d5ef-4b13-9040-1fbc44a7a1ca"
+      },
+      {
+        "label": "drop-TSH",
+        "url": "https://horizon.bespokelabs.ai/evaluations/32c9a8ca-6045-4629-a27c-a01e13f656b7"
+      }
+    ],
+    "record": "tasks/budgeted-thyroid.md",
+    "analysis": "../analysis/budgeted-thyroid/STRATEGY.md",
+    "source_json": "../analysis/budgeted-thyroid/band_supports.json"
+  },
+  "narrative": {
+    "Why the drop-TSH salvage failed": "The drop-TSH salvage TIGHTENED the band (0.098 -> 0.020 width, #band_supports 2.57 -> 1.48), it did not widen it. Removing TSH removed the one discriminative axis, collapsing the endpoints. Confirms the design bible: no cost/feature knob manufactures the heterogeneity this data lacks (both variants REJECT)."
+  }
+}

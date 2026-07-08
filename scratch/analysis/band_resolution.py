@@ -34,10 +34,13 @@ from sklearn.metrics import balanced_accuracy_score
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))   # repo root, so `sdk`/`tasks_def` import
 from sdk.mediated.data_view import DataView
+from sdk.mediated import config_world
 from sdk.hor_utils.noise import (
     contiguous_label_blocks, block_bootstrap_sigma, rank_resolution, paired_gap_sigma,
 )
 from sdk.hor_utils.resolution import resolution
+from sdk.hor_utils.band_report import EvalStats, TaskBandReport, write as write_band_report, validate
+from tasks_def.band_manifest import MANIFEST
 
 REPO = Path(__file__).resolve().parents[2]
 Z = 2.0
@@ -49,21 +52,14 @@ def bacc(yt, yp):
     return balanced_accuracy_score(yt, yp)
 
 
-# dataset -> world, npz, config module (for the view), task-id, primary eval-id.
-# `world` routes the emitted record + table to worlds/<world>/readmes/ (multi-world: each world owns its
-# own submission table + records; the SDK band_report is world-agnostic and takes the paths explicitly).
-DATASETS = {
-    "covtype":     dict(world="budgeted", npz="worlds/budgeted/data/covtype_anon.npz",  cfg="tasks_def.configs.budgeted_covtype",  eval="babd012a-4ae2-4349-99cb-a030db3f4491"),
-    "tep":         dict(world="budgeted", npz="worlds/budgeted/data/tep_anon.npz",      cfg="tasks_def.configs.budgeted_tep",      eval="4d68f219-12f4-4f79-b61c-ee118052f610"),
-    "unsw":        dict(world="budgeted", npz="worlds/budgeted/data/unsw_anon.npz",     cfg="tasks_def.configs.budgeted_unsw",     eval="27615e12-de7e-4b29-8ef7-900fe5870d0e"),
-    "thyroid":     dict(world="budgeted", npz="worlds/budgeted/data/thyroid_anon.npz",  cfg="tasks_def.configs.budgeted_thyroid",  eval="6fcbf032-d5ef-4b13-9040-1fbc44a7a1ca"),
-    "thyroid-dropTSH": dict(world="budgeted", npz="worlds/budgeted/data/thyroid_anon.npz", cfg="tasks_def.configs.budgeted_thyroid", eval="32c9a8ca-6045-4629-a27c-a01e13f656b7"),
-    "hydraulic":   dict(world="budgeted", npz="worlds/budgeted/data/hydraulic_anon.npz", cfg="tasks_def.configs.budgeted_hydraulic", eval="f7318a3b-91ea-4456-a086-4d43bd449468"),
-    "diabetes":    dict(world="budgeted", npz="worlds/budgeted/data/diabetes_anon.npz", cfg="tasks_def.configs.budgeted_diabetes", eval="9f3883e9-5b3a-4e42-94a7-f170450101dd"),
-    "derma":       dict(world="budgeted", npz="worlds/budgeted/data/derma_anon.npz",    cfg="tasks_def.configs.budgeted_derma",    eval="0dd9f969-ebd5-44ef-b891-aeeccfcd6502"),
-    "label-budget-covtype": dict(world="label_budget", npz="worlds/label_budget/data/covtype_anon.npz", cfg="tasks_def.configs.label_budget_covtype", eval="03bdb135-2c06-4dd3-bd13-b3c813daee88"),
-    "label-budget-covtype-open": dict(world="label_budget", npz="worlds/label_budget/data/covtype_anon.npz", cfg="tasks_def.configs.label_budget_covtype_open", eval="303517c9-82fd-4641-84a2-cb4f88e41606"),
-}
+_T = "https://horizon.bespokelabs.ai/tasks/"
+_E = "https://horizon.bespokelabs.ai/evaluations/"
+
+STRATEGY_STUB = ("# {task}: strategy analysis\n\n**[PENDING]** the 5-run solution comparison (skill "
+                 "gradient vs strategy diversity, the label-budget lesson) has not been written yet. "
+                 "This file is HUMAN-owned and updated INDEPENDENTLY of the generated table/record "
+                 "(the analysis seam, sdk/methodology/noise_floor.md). Editing it never re-touches the "
+                 "SDK-owned record or master table.\n")
 
 
 def _world_paths(world):
@@ -71,65 +67,58 @@ def _world_paths(world):
     base = REPO / "worlds" / world / "readmes"
     return base / "tasks", base / "README_submission.md"
 
-_T = "https://horizon.bespokelabs.ai/tasks/"
-_E = "https://horizon.bespokelabs.ai/evaluations/"
 
-# WORLD-OWNED presentation + human judgment per dataset (the SDK only formats these; it never
-# synthesizes a verdict line or a submit flag). task = bare record/row key; narrative = extra ## sections
-# the analyst writes (empty for simple rows). This is the seam's world half; the SDK band_report renders it.
-REPORT_META = {
-    "covtype": dict(task="budgeted-covtype", budget="6", metric="balanced-acc", task_url=_T+"4de1e511-7738-4889-bed3-a0a532b051e5",
-        submit="**YES**", verdict_line="WIDE band, endpoints ~7 LSD apart; the test resolves it despite the rarest class holding 266 rows",
-        evals=[("eval", _E+"babd012a-4ae2-4349-99cb-a030db3f4491")]),
-    "tep": dict(task="budgeted-tep", budget="15", metric="balanced-acc", task_url=_T+"36abdac8-4edd-4304-a48c-53933cd34f62",
-        submit="**YES**", verdict_line="WIDE band, endpoints ~8 LSD apart (synthetic + anonymized Tennessee Eastman Process; accepted for tasks)",
-        evals=[("eval", _E+"4d68f219-12f4-4f79-b61c-ee118052f610")]),
-    "unsw": dict(task="budgeted-unsw", budget="2", metric="balanced-acc", task_url=_T+"f8cc010b-53f1-4745-9481-146ff721bb50",
-        submit="NO", verdict_line="NARROW band, endpoints < 1 LSD apart (inside noise)",
-        evals=[("eval", _E+"27615e12-de7e-4b29-8ef7-900fe5870d0e")]),
-    "thyroid": dict(task="budgeted-thyroid", budget="3", metric="balanced-acc", task_url=_T+"c69cfa04-5416-486c-b25a-0b345eea4d98",
-        submit="NO", verdict_line="below the 3-tier bar (73-row rarest class inflates sigma); drop-TSH salvage tighter, it failed",
-        evals=[("orig", _E+"6fcbf032-d5ef-4b13-9040-1fbc44a7a1ca"), ("drop-TSH", _E+"32c9a8ca-6045-4629-a27c-a01e13f656b7")]),
-    "hydraulic": dict(task="budgeted-hydraulic", budget="3", metric="balanced-acc", task_url=_T+"2935f9b4-ea7f-4127-8b73-b91a7d4d6f24",
-        submit="NO", verdict_line="CEILING: gap test says endpoints indistinct; one cheap sensor solves it so the budget never binds",
-        evals=[("eval", _E+"f7318a3b-91ea-4456-a086-4d43bd449468")]),
-    "diabetes": dict(task="budgeted-diabetes", budget="3", metric="balanced-acc", task_url=_T+"bb7097fc-2984-4b74-8088-e200de4373f3",
-        submit="NO", verdict_line="NARROW band; readmission learnable from the cheap groups, expensive labs inert, converge ~0.62",
-        evals=[("eval", _E+"9f3883e9-5b3a-4e42-94a7-f170450101dd")]),
-    "derma": dict(task="budgeted-derma", budget="6", metric="balanced-acc", task_url=_T+"1a019b65-bfed-4779-8e00-e3982d3c7a51",
-        submit="NO", verdict_line="real spread, but the rarest test class = 4 rows buries it; unresolvable at any run count",
-        evals=[("eval", _E+"0dd9f969-ebd5-44ef-b891-aeeccfcd6502")]),
-    "label-budget-covtype": dict(task="label-budget-covtype", budget="L=2000", metric="balanced-acc", task_url=_T+"33da8224-530b-4641-a61a-7f1a1655b823",
-        submit="NO (strategy)", verdict_line="band VIABLE (wide), but ELIMINATED on strategy homogeneity (all 5 students wrote one recipe), not on the band",
-        evals=[("eval", _E+"03bdb135-2c06-4dd3-bd13-b3c813daee88")]),
-    "label-budget-covtype-open": dict(task="label-budget-covtype-open", budget="L=1500", metric="balanced-acc", task_url=_T+"e9ee3601-21ce-4162-b868-ab424d7932cd",
-        submit="**YES** (skill gradient)", verdict_line="the open-ended + rare-class-starved salvage of label-budget-covtype: a WIDE band AND a real, code-legible skill gradient (rare-class recall c1/c6, p_le0=0)",
-        evals=[("eval", _E+"303517c9-82fd-4641-84a2-cb4f88e41606")]),
-}
+def _analysis_dir(world, task):
+    """worlds/<world>/analysis/<task>/ — the task-keyed source-of-truth dir (band_supports.json + STRATEGY.md)."""
+    return REPO / "worlds" / world / "analysis" / task
 
 
-def to_band_report(ds, r):
-    """Map an analyze() result dict `r` + the world's REPORT_META into the SDK BandReport schema. Pure
-    mapping, no math. verdict_line / submit / narrative are world-authored (REPORT_META); the SDK only
-    formats the numbers `r` already computed."""
-    from sdk.hor_utils.band_report import BandReport
-    m = REPORT_META.get(ds, {"task": ds, "budget": "", "metric": "balanced-acc",
-                             "submit": "SUBMIT" if r.get("verdict") == "SUBMIT" else "REJECT",
-                             "verdict_line": str(r.get("verdict", "")), "evals": [("eval", _E + r["eval"])],
-                             "task_url": ""})
-    d = dict(r)
-    d.update(dict(
-        task=m["task"], budget_label=m.get("budget", ""), metric=m.get("metric", "balanced-acc"),
-        band_supports=None if r.get("ceiling") else r.get("band_supports"),
-        n_runs=r.get("n_runs_with_preds", 0), n_nondegenerate=r.get("n_nondegenerate", 0),
-        sigma_source="stratified block-bootstrap on the median run",
-        verdict_line=m["verdict_line"], submit=m["submit"], narrative=m.get("narrative", {}),
-        links=dict(task_url=m.get("task_url", ""),
-                   evals=[{"label": lbl, "url": url} for lbl, url in m.get("evals", [])],
-                   record=f"tasks/{m['task']}.md",
-                   source_json=f"scratch/analysis/{r['eval'][:8]}/band_supports.json"),
-    ))
-    return BandReport.from_dict(d)
+def _best_observed(cfg_mod):
+    """Per-task best_observed sourced from the config, falling back to the SDK mediated world default."""
+    cfg = importlib.import_module(cfg_mod).CONFIG
+    return float(cfg.get("best_observed", config_world.CONFIG["best_observed"]))
+
+
+def _task_links(task, spec):
+    """Link block for a task. analysis/source_json are relative to the world's README_submission.md
+    (the table), per the analysis seam; record is relative to the same; eval urls from the manifest."""
+    return dict(
+        task_url=(_T + spec["task_id"]) if spec.get("task_id") else "",
+        evals=[{"label": ev.get("label", ""), "url": _E + ev["eval_id"]} for ev in spec["evals"]],
+        record=f"tasks/{task}.md",
+        analysis=f"../analysis/{task}/STRATEGY.md",
+        source_json=f"../analysis/{task}/band_supports.json",
+    )
+
+
+def _task_report(task, spec, evals):
+    """Assemble the task-keyed TaskBandReport from its EvalStats list + manifest metadata."""
+    return TaskBandReport(
+        task=task, world=spec["world"], metric="balanced-acc", budget_label=spec.get("budget_label", ""),
+        best_observed=_best_observed(spec["cfg"]), verdict_line=spec.get("verdict_line", ""),
+        submit=spec.get("submit", ""), primary_eval=spec["evals"][0]["eval_id"], evals=evals,
+        links=_task_links(task, spec), narrative=spec.get("narrative", {}),
+    )
+
+
+def _mk_eval(d, ev):
+    """Build an EvalStats from a per-eval stats dict `d` (analyze result OR a stored json), stamping the
+    manifest's eval_id/label and deriving the band-note from the failed-run count."""
+    es = EvalStats.from_dict(d)
+    es.eval_id, es.label = ev["eval_id"], ev.get("label", "")
+    if es.n_failed and not es.band_note:
+        es.band_note = f"(+{es.n_failed} fail)"
+    return es
+
+
+def assemble_task(task, spec):
+    """Analyze each of the task's evals, wrap each as EvalStats, assemble the TaskBandReport. Returns
+    (TaskBandReport | None, per-eval result dicts); report is None if any eval errored."""
+    results = [analyze_eval(spec["cfg"], spec["npz"], ev["eval_id"], ev.get("label", "")) for ev in spec["evals"]]
+    if any("error" in r for r in results):
+        return None, results
+    evals = [_mk_eval(r, ev) for ev, r in zip(spec["evals"], results)]
+    return _task_report(task, spec, evals), results
 
 
 def _cfg(mod_name):
@@ -185,13 +174,14 @@ def _recall_by_class(y_true, yp, classes):
             for c in classes}
 
 
-def analyze(ds):
-    spec = DATASETS[ds]
-    cfg = _cfg(spec["cfg"])
-    yvars = _y_true_variants(spec["npz"], cfg)
-    raw = _decode_runs(spec["eval"])
+def analyze_eval(cfg_mod, npz, eval_id, label=""):
+    """Per-eval band stats from the stored predictions of one eval (no policy replay). Returns a dict of
+    EvalStats-compatible keys (+ `_submissions`/`op`/`verdict` diagnostics the SDK schema drops)."""
+    cfg = _cfg(cfg_mod)
+    yvars = _y_true_variants(npz, cfg)
+    raw = _decode_runs(eval_id)
     if not raw:
-        return {"dataset": ds, "eval": spec["eval"], "error": "no rollouts on disk (pull first)"}
+        return {"eval_id": eval_id, "label": label, "error": "no rollouts on disk (pull first)"}
 
     # align each run to the matching y_true length; keep runs with predictions
     y_true = None
@@ -201,10 +191,10 @@ def analyze(ds):
             failed += 1
             continue
         if len(p) not in yvars:
-            return {"dataset": ds, "error": f"run {rn} preds len {len(p)} matches no y_true {list(yvars)}"}
+            return {"eval_id": eval_id, "label": label, "error": f"run {rn} preds len {len(p)} matches no y_true {list(yvars)}"}
         yt = yvars[len(p)]
         y_true = yt if y_true is None else y_true
-        assert len(p) == len(y_true), f"mixed test sizes within eval {spec['eval']}"
+        assert len(p) == len(y_true), f"mixed test sizes within eval {eval_id}"
         preds.append(p.astype(np.int64))
         scores.append(bacc(y_true, p))
         metas.append((rn, sub))
@@ -272,23 +262,74 @@ def analyze(ds):
     submissions = {nd_meta[i][0]: nd_meta[i][1] for i in range(len(nd_meta))}
 
     return {
-        "_submissions": submissions,   # popped + dumped to solutions/ by main(); not persisted in json
-        "per_class_recall": per_class_recall,
-        "recall_delta_hi_minus_lo": recall_delta,
-        "dataset": ds, "eval": spec["eval"],
-        "n_runs_with_preds": len(preds), "n_failed": failed, "n_nondegenerate": len(nd_scores),
-        "band": [lo, hi], "width": width, "mid": mid,
+        "_submissions": submissions,   # popped + dumped to solutions/ by callers; not in EvalStats
+        "op": float(bb["op"]), "verdict": verdict,     # console diagnostics; dropped by EvalStats.from_dict
+        "eval_id": eval_id, "label": label,
+        "per_class_recall": per_class_recall, "recall_delta": recall_delta,
+        "n_runs": len(preds), "n_failed": failed, "n_nondegenerate": len(nd_scores),
+        "band": [lo, hi], "spread": width, "mid": mid,
         "scores_sorted": [round(s, 4) for s in nd_scores],
         "n_test": int(len(y_true)), "n_classes": int(len(classes)),
         "rarest_class": int(classes[rarest_i]), "rarest_count": int(counts[rarest_i]),
         "per_class_counts": {int(c): int(n) for c, n in zip(classes, counts)},
-        "sigma_abs": sigma_abs, "op": float(bb["op"]), "lsd": lsd,
-        "band_supports": band_supports, "n_observed": n_observed,
-        "ceiling": bool(ceiling),
+        "sigma_abs": sigma_abs, "lsd": lsd, "band_supports": band_supports, "observed": n_observed,
+        "ceiling": bool(ceiling), "sigma_source": "stratified block-bootstrap on the median run",
         "gap": {k: (round(v, 4) if isinstance(v, float) else v)
                 for k, v in gap.items() if k in ("gap", "sigma_gap", "ratio", "p_le0")},
-        "verdict": verdict,
     }
+
+
+def _dump_solutions(adir, eval_id, subs, multi):
+    """Dump each run's verbatim solution.py for the CODE half of the analysis. Multi-eval tasks nest
+    per-eval under solutions/<eval8>/ so evals don't clobber each other."""
+    soldir = (adir / "solutions" / eval_id[:8]) if multi else (adir / "solutions")
+    soldir.mkdir(parents=True, exist_ok=True)
+    for rn, code in subs.items():
+        if code:
+            (soldir / f"run{rn}.py").write_text(code)
+
+
+def _write_task(tbr, spec, emit, records_override=None, table_override=None):
+    """Write the task-keyed truth (band_supports.json) + a STRATEGY.md stub (never overwritten), and,
+    on emit, render the record + upsert the world's master-table row via the SDK."""
+    adir = _analysis_dir(spec["world"], tbr.task)
+    adir.mkdir(parents=True, exist_ok=True)
+    (adir / "band_supports.json").write_text(json.dumps(tbr.to_dict(), indent=2))
+    strat = adir / "STRATEGY.md"
+    if not strat.exists():
+        strat.write_text(STRATEGY_STUB.format(task=tbr.task))
+    if emit:
+        records_dir = Path(records_override) if records_override else _world_paths(spec["world"])[0]
+        table_path = Path(table_override) if table_override else _world_paths(spec["world"])[1]
+        records_dir.mkdir(parents=True, exist_ok=True)
+        write_band_report(tbr, records_dir, table_path)
+
+
+def migrate():
+    """FREE regroup: build the task-keyed truth from the EXISTING per-eval scratch jsons (no re-analysis),
+    then render records + upsert rows. `per_class_recall` survives only where the source json carried it
+    (it backfills on the next --emit, which recomputes)."""
+    for task, spec in MANIFEST.items():
+        evals = [_mk_eval(json.load(open(REPO / "scratch" / "analysis" / ev["eval_id"][:8] / "band_supports.json")), ev)
+                 for ev in spec["evals"]]
+        tbr = _task_report(task, spec, evals)
+        _write_task(tbr, spec, emit=True)
+        print(f"migrated {task:28s} ({len(evals)} eval{'s' if len(evals) != 1 else ''}) "
+              f"-> worlds/{spec['world']}/analysis/{task}/")
+    print("done; run --validate")
+
+
+def _print_eval(tag, es, verdict):
+    bs = "ceiling" if es.ceiling else f"{es.band_supports:.2f}"
+    print(f"{tag:26s} band {es.band[0]:.3f}-{es.band[1]:.3f} w={es.spread:.3f} "
+          f"sig={es.sigma_abs:.4f} LSD={es.lsd:.4f} rare={es.rarest_count:>5d} "
+          f"#obs={es.observed} #supports={bs:>7s}  {verdict}")
+    cls = sorted(next(iter(es.per_class_recall), {}).get("recall", {}))
+    if cls:
+        print("   recall/class weak->strong  (" + " ".join(f"c{c}" for c in cls) + ")")
+        for pr in es.per_class_recall:
+            print(f"     run{pr['run']} {pr['score']:.3f} | " + " ".join(f"{pr['recall'][c]:.2f}" for c in cls))
+        print("   delta(hi-lo)/class: " + " ".join(f"c{c}:{es.recall_delta.get(c, 0):+.2f}" for c in cls))
 
 
 def main(argv):
@@ -299,8 +340,7 @@ def main(argv):
 
     # World enforcement entry: validate EVERY world's row<->record invariant via the SDK (one command).
     if "--validate" in args:
-        from sdk.hor_utils.band_report import validate
-        worlds = sorted({spec["world"] for spec in DATASETS.values()})
+        worlds = sorted({spec["world"] for spec in MANIFEST.values()})
         probs = []
         for world in worlds:
             rdir, tpath = _world_paths(world)
@@ -311,56 +351,44 @@ def main(argv):
         print(f"{len(probs)} problem(s)." if probs else "invariant OK across all worlds (row <-> record bijection holds).")
         return 1 if any(pr.kind != "polarity_advisory" for pr in probs) else 0
 
+    # FREE migration: regroup existing per-eval scratch jsons into the task-keyed truth (no re-analysis).
+    if "--migrate" in args:
+        migrate()
+        return 0
+
     emit = "--emit" in args   # opt-in: after computing, render the record + upsert the world's table row
-    # Explicit --records-dir/--table override the per-world default (used by adhoc/testing only).
-    records_override = _g("--records-dir")
+    records_override = _g("--records-dir")     # override the per-world default (adhoc/testing only)
     table_override = _g("--table")
 
-    # Generic ANY-eval mode (a row not in DATASETS): --eval <id> --cfg <module> --npz <path> [--name X] [--world W].
-    if "--eval" in args:
+    manifest = dict(MANIFEST)
+    if "--eval" in args:      # adhoc ANY-eval: --eval <id> --cfg <mod> --npz <path> [--name X] [--world W]
         name = _g("--name") or "adhoc"
-        DATASETS[name] = dict(world=_g("--world") or "budgeted", npz=_g("--npz"), cfg=_g("--cfg"), eval=_g("--eval"))
+        manifest[name] = dict(world=_g("--world") or "budgeted", cfg=_g("--cfg"), npz=_g("--npz"),
+                              budget_label="", task_id="", submit="", verdict_line="", narrative={},
+                              evals=[dict(eval_id=_g("--eval"), label="")])
         keys = [name]
     else:
-        keys = [a for a in args if not a.startswith("--")] or list(DATASETS)
-    rows = []
-    for ds in keys:
-        r = analyze(ds)
-        rows.append(r)
-        if "error" in r:
-            print(f"{ds:22s} ERROR: {r['error']}")
+        keys = [a for a in args if not a.startswith("--")] or list(manifest)
+
+    reports = []
+    for task in keys:
+        spec = manifest[task]
+        tbr, results = assemble_task(task, spec)
+        if tbr is None:
+            print(f"{task:26s} ERROR: {next(r for r in results if 'error' in r)['error']}")
             continue
-        out = REPO / "scratch" / "analysis" / r["eval"][:8]
-        out.mkdir(parents=True, exist_ok=True)
-        # dump the verbatim solutions (the CODE half of the analysis) for side-by-side reading
-        subs = r.pop("_submissions", {})
-        soldir = out / "solutions"; soldir.mkdir(exist_ok=True)
-        for rn, code in subs.items():
-            if code:
-                (soldir / f"run{rn}.py").write_text(code)
-        (out / "band_supports.json").write_text(json.dumps(r, indent=2))
+        adir = _analysis_dir(spec["world"], task)
+        adir.mkdir(parents=True, exist_ok=True)
+        multi = len(spec["evals"]) > 1
+        for r in results:
+            _dump_solutions(adir, r["eval_id"], r.pop("_submissions", {}), multi)
+        _write_task(tbr, spec, emit, records_override, table_override)
+        reports.append(tbr)
+        for r, es in zip(results, tbr.evals):
+            _print_eval(f"{task}/{r['label']}" if multi else task, es, r["verdict"])
         if emit:
-            from sdk.hor_utils.band_report import write as write_band_report
-            w_records, w_table = _world_paths(DATASETS[ds]["world"])
-            records_dir = Path(records_override) if records_override else w_records
-            table_path = Path(table_override) if table_override else w_table
-            records_dir.mkdir(parents=True, exist_ok=True)
-            report = to_band_report(ds, r)
-            write_band_report(report, records_dir, table_path)
-            print(f"   EMITTED record + upserted row -> {records_dir}/{report.task}.md")
-        bs = "ceiling" if r["ceiling"] else f"{r['band_supports']:.2f}"
-        print(f"{ds:22s} band {r['band'][0]:.3f}-{r['band'][1]:.3f} w={r['width']:.3f} "
-              f"sig={r['sigma_abs']:.4f} LSD={r['lsd']:.4f} rare={r['rarest_count']:>5d} "
-              f"#obs={r['n_observed']} #supports={bs:>7s}  {r['verdict']}")
-        # DRIVER table: per-class recall weak->strong + the hi-minus-lo delta (which classes carry the band)
-        cls = sorted(next(iter(r["per_class_recall"]), {}).get("recall", {}))
-        if cls:
-            print("   recall/class weak->strong  (" + " ".join(f"c{c}" for c in cls) + ")")
-            for pr in r["per_class_recall"]:
-                print(f"     run{pr['run']} {pr['score']:.3f} | " + " ".join(f"{pr['recall'][c]:.2f}" for c in cls))
-            print("   delta(hi-lo)/class: " + " ".join(f"c{c}:{r['recall_delta_hi_minus_lo'].get(c,0):+.2f}" for c in cls))
-            print(f"   solutions dumped -> {soldir}")
-    return rows
+            print(f"   EMITTED -> worlds/{spec['world']}/analysis/{task}/ + {spec['world']} readmes")
+    return reports
 
 
 if __name__ == "__main__":

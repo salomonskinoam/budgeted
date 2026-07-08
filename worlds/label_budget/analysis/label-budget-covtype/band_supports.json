@@ -1,0 +1,73 @@
+{
+  "task": "label-budget-covtype",
+  "world": "label_budget",
+  "metric": "balanced-acc",
+  "budget_label": "L=2000",
+  "best_observed": 1.0,
+  "verdict_line": "band VIABLE (wide, endpoints ~6 LSD apart), but ELIMINATED on strategy homogeneity (all 5 students wrote one recipe), not on the band",
+  "submit": "NO (strategy)",
+  "primary_eval": "03bdb135-2c06-4dd3-bd13-b3c813daee88",
+  "evals": [
+    {
+      "eval_id": "03bdb135-2c06-4dd3-bd13-b3c813daee88",
+      "label": "",
+      "band": [
+        0.5495924883667551,
+        0.6358276236049
+      ],
+      "band_note": "",
+      "spread": 0.08623513523814486,
+      "mid": 0.5927100559858276,
+      "sigma_abs": 0.0052416462108897666,
+      "lsd": 0.014825614321203707,
+      "band_supports": 6.816631498015614,
+      "observed": 2,
+      "ceiling": false,
+      "gap": {
+        "gap": 0.0862,
+        "sigma_gap": 0.006,
+        "ratio": 14.4667,
+        "p_le0": 0.0
+      },
+      "sigma_source": "",
+      "n_runs": 5,
+      "n_nondegenerate": 5,
+      "n_failed": 0,
+      "scores_sorted": [
+        0.5496,
+        0.6232,
+        0.625,
+        0.6312,
+        0.6358
+      ],
+      "n_test": 56250,
+      "n_classes": 7,
+      "per_class_counts": {
+        "0": 266,
+        "1": 1986,
+        "2": 20509,
+        "3": 27428,
+        "4": 1681,
+        "5": 3461,
+        "6": 919
+      },
+      "rarest_class": 0,
+      "rarest_count": 266,
+      "per_class_recall": [],
+      "recall_delta": {}
+    }
+  ],
+  "links": {
+    "task_url": "https://horizon.bespokelabs.ai/tasks/33da8224-530b-4641-a61a-7f1a1655b823",
+    "evals": [
+      {
+        "label": "",
+        "url": "https://horizon.bespokelabs.ai/evaluations/03bdb135-2c06-4dd3-bd13-b3c813daee88"
+      }
+    ],
+    "record": "tasks/label-budget-covtype.md",
+    "analysis": "../analysis/label-budget-covtype/STRATEGY.md",
+    "source_json": "../analysis/label-budget-covtype/band_supports.json"
+  },
+  "narrative": {}
+}

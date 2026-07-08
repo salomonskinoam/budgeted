@@ -1,5 +1,16 @@
 # Worklog (newest on top)
 
+- Task-keyed, SDK-dictated band source of truth. Was: eval-hash-keyed flat jsons under `scratch/analysis/`
+  + metadata split across `DATASETS`/`REPORT_META` in the driver (disagreeing on multi-eval thyroid) +
+  `best_observed` implicit in the SDK default. Now: SDK owns `TaskBandReport` + `EvalStats` (one task ->
+  a LIST of evals, each with its own stats; legacy `BandReport` auto-lifts and renders byte-identically,
+  so imputation is untouched, verified). Truth lives at `worlds/<world>/analysis/<task>/band_supports.json`
+  (task-keyed, committed); metadata + which-evals-per-task in `tasks_def/band_manifest.py`; `best_observed`
+  sourced from the task config. Thyroid is now ONE task with 2 evals (orig + drop-TSH), machine-rendered
+  (was hand-written); its salvage insight preserved as a manifest `narrative`. `--migrate` did the free
+  regroup (no re-analysis); the stale eval-hashed scratch jsons were removed. SDK bumped d208041. Full
+  per-eval recall backfills on the next (approval-gated) `--emit`. `--validate` green across both worlds.
+
 - Readme reorg (option A, multi-world) + multi-world band-report generator. Bibles (durable reference)
   live at repo-top `readmes/` (`README_general_direction`, `band_method`, `world_architecture`); session
   handoffs at `readmes/ai/handoffs/`; each world now OWNS its submission table + task records under

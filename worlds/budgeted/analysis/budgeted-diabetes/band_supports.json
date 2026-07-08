@@ -1,0 +1,67 @@
+{
+  "task": "budgeted-diabetes",
+  "world": "budgeted",
+  "metric": "balanced-acc",
+  "budget_label": "3",
+  "best_observed": 1.0,
+  "verdict_line": "NARROW band; readmission learnable from the cheap groups, expensive labs inert, converge ~0.62",
+  "submit": "NO",
+  "primary_eval": "9f3883e9-5b3a-4e42-94a7-f170450101dd",
+  "evals": [
+    {
+      "eval_id": "9f3883e9-5b3a-4e42-94a7-f170450101dd",
+      "label": "",
+      "band": [
+        0.6138956710317378,
+        0.6202307264013822
+      ],
+      "band_note": "(+1 fail)",
+      "spread": 0.0063350553696444045,
+      "mid": 0.61706319871656,
+      "sigma_abs": 0.006961464101684715,
+      "lsd": 0.019689993893151916,
+      "band_supports": 1.321739834152397,
+      "observed": 1,
+      "ceiling": false,
+      "gap": {
+        "gap": 0.0063,
+        "sigma_gap": 0.0042,
+        "ratio": 1.5259,
+        "p_le0": 0.055
+      },
+      "sigma_source": "",
+      "n_runs": 4,
+      "n_nondegenerate": 4,
+      "n_failed": 1,
+      "scores_sorted": [
+        0.6139,
+        0.6143,
+        0.6165,
+        0.6202
+      ],
+      "n_test": 12000,
+      "n_classes": 2,
+      "per_class_counts": {
+        "0": 1367,
+        "1": 10633
+      },
+      "rarest_class": 0,
+      "rarest_count": 1367,
+      "per_class_recall": [],
+      "recall_delta": {}
+    }
+  ],
+  "links": {
+    "task_url": "https://horizon.bespokelabs.ai/tasks/bb7097fc-2984-4b74-8088-e200de4373f3",
+    "evals": [
+      {
+        "label": "",
+        "url": "https://horizon.bespokelabs.ai/evaluations/9f3883e9-5b3a-4e42-94a7-f170450101dd"
+      }
+    ],
+    "record": "tasks/budgeted-diabetes.md",
+    "analysis": "../analysis/budgeted-diabetes/STRATEGY.md",
+    "source_json": "../analysis/budgeted-diabetes/band_supports.json"
+  },
+  "narrative": {}
+}

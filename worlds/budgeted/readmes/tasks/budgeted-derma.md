@@ -1,46 +1,37 @@
 # budgeted-derma: band-resolution record
 
-**Verdict: REJECT (resolution floor).** #band_supports = **1.21**.
-
-The spread is real, but it sits inside a noise floor set by a 4-instance test
-class. The band cannot be resolved at any run count.
+**Verdict: real spread, but the rarest test class = 4 rows buries it; unresolvable at any run count**
 
 ## Band
 
-- eval: `0dd9f969-ebd5-44ef-b891-aeeccfcd6502`
-- scores sorted: 0.9307, 0.9426, 0.9426, 0.9426, 0.9459
-- band: 0.931 → 0.946
-- width: 0.015
+- Eval: `0dd9f969-ebd5-44ef-b891-aeeccfcd6502`; 5 runs, 5 non-degenerate, 0 failed / 0 excluded.
+- Scores sorted: 0.9307, 0.9426, 0.9426, 0.9426, 0.9459.
+- Band (worst to best): 0.9307 to 0.9459.
+- Width (spread): 0.0152.
 
-## Noise floor (capped by a 4-row class)
+## Noise floor (this row's calculation)
 
-- metric: balanced accuracy
-- n_test = 83, 6 classes
-- rarest test class = **4 rows**. A 4-row recall has SE ≈ √(p(1−p)/4) ≈ 0.18.
-- that lone 4-row class dominates σ_abs: σ_abs = **0.0257** (huge for a 0.94 score).
-- LSD = z·√2·σ_abs (z=2) = **0.0727**.
-
-This is a RESOLUTION cap, not a lack of structure. The band endpoints reflect
-real differences between runs, but the per-class recall of a 4-instance class is
-so noisy that it inflates σ_abs, and LSD swallows the whole 0.015-wide band.
+- Metric: balanced-acc.
+- Test: 83 rows across 6 classes. per-class 16 / 11 / 12 / 4 / 26 / 14
+- Rarest test class (3 = 4 rows) caps resolution (recall SE ~ sqrt(p(1-p)/4)).
+- sigma_abs = 0.025706.
+- LSD = z*sqrt(2)*sigma_abs (z=2) = 0.07271.
 
 ## #band_supports vs #observed
 
-- #band_supports = 1 + width/LSD = 1 + 0.015 / 0.0727 = **1.21**.
-- endpoints are only ~0.2 LSD apart → unresolvable.
-- #observed = **1** (all 5 runs are one indistinguishable tier).
-- gap test: gap 0.0152, σ_gap 0.0227, ratio 0.67, P(≤0) = 0.278.
+- #band_supports = 1 + width/LSD = 1 + 0.0152/0.07271 = **1.21**. endpoints ~0 LSDs apart.
+- #observed = 1 (the tiers the runs actually occupy).
+- Gap test: gap = 0.0152, sigma_gap = 0.0227, ratio = 0.67, p_le0 = 0.278.
 
 ## Verdict
 
-**REJECT (resolution floor).** The structure is real, but a 4-instance test
-class makes the band unresolvable at ANY N. More runs do not help: the floor is
-set by class size, not by sample count. This is exactly the failure mode covtype
-was built to avoid (a populous rarest class keeps σ_abs small enough that real
-spread resolves into LEVELS).
+- Rule: #band_supports >= 3 = SUBMIT-viable; <= 2 = REJECT (at the ceiling, the gap test decides).
+- #band_supports = 1.21.
+- real spread, but the rarest test class = 4 rows buries it; unresolvable at any run count
 
 ## Links
 
-- task: https://horizon.bespokelabs.ai/tasks/1a019b65-bfed-4779-8e00-e3982d3c7a51
-- eval: https://horizon.bespokelabs.ai/evaluations/0dd9f969-ebd5-44ef-b891-aeeccfcd6502
-- data: `scratch/analysis/0dd9f969/band_supports.json`
+- Task: https://horizon.bespokelabs.ai/tasks/1a019b65-bfed-4779-8e00-e3982d3c7a51
+- Eval: https://horizon.bespokelabs.ai/evaluations/0dd9f969-ebd5-44ef-b891-aeeccfcd6502
+- Analysis (strategy, human-authored, updated independently): `../analysis/budgeted-derma/STRATEGY.md`
+- Source JSON: `../analysis/budgeted-derma/band_supports.json`

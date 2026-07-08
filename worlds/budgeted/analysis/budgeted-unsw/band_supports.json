@@ -1,0 +1,72 @@
+{
+  "task": "budgeted-unsw",
+  "world": "budgeted",
+  "metric": "balanced-acc",
+  "budget_label": "2",
+  "best_observed": 1.0,
+  "verdict_line": "NARROW band, endpoints < 1 LSD apart (inside noise)",
+  "submit": "NO",
+  "primary_eval": "27615e12-de7e-4b29-8ef7-900fe5870d0e",
+  "evals": [
+    {
+      "eval_id": "27615e12-de7e-4b29-8ef7-900fe5870d0e",
+      "label": "",
+      "band": [
+        0.7222216956622128,
+        0.7325343104313181
+      ],
+      "band_note": "",
+      "spread": 0.010312614769105277,
+      "mid": 0.7273780030467655,
+      "sigma_abs": 0.00748589382802109,
+      "lsd": 0.02117330515614494,
+      "band_supports": 1.4870573910428122,
+      "observed": 2,
+      "ceiling": false,
+      "gap": {
+        "gap": 0.0103,
+        "sigma_gap": 0.005,
+        "ratio": 2.0434,
+        "p_le0": 0.017
+      },
+      "sigma_source": "",
+      "n_runs": 5,
+      "n_nondegenerate": 5,
+      "n_failed": 0,
+      "scores_sorted": [
+        0.7222,
+        0.731,
+        0.7312,
+        0.7317,
+        0.7325
+      ],
+      "n_test": 4500,
+      "n_classes": 6,
+      "per_class_counts": {
+        "0": 1056,
+        "1": 435,
+        "2": 798,
+        "3": 251,
+        "4": 293,
+        "5": 1667
+      },
+      "rarest_class": 3,
+      "rarest_count": 251,
+      "per_class_recall": [],
+      "recall_delta": {}
+    }
+  ],
+  "links": {
+    "task_url": "https://horizon.bespokelabs.ai/tasks/f8cc010b-53f1-4745-9481-146ff721bb50",
+    "evals": [
+      {
+        "label": "",
+        "url": "https://horizon.bespokelabs.ai/evaluations/27615e12-de7e-4b29-8ef7-900fe5870d0e"
+      }
+    ],
+    "record": "tasks/budgeted-unsw.md",
+    "analysis": "../analysis/budgeted-unsw/STRATEGY.md",
+    "source_json": "../analysis/budgeted-unsw/band_supports.json"
+  },
+  "narrative": {}
+}

@@ -1,0 +1,73 @@
+{
+  "task": "budgeted-covtype",
+  "world": "budgeted",
+  "metric": "balanced-acc",
+  "budget_label": "6",
+  "best_observed": 1.0,
+  "verdict_line": "WIDE band, endpoints ~7 LSD apart; the test resolves it despite the rarest class holding 266 rows",
+  "submit": "**YES**",
+  "primary_eval": "babd012a-4ae2-4349-99cb-a030db3f4491",
+  "evals": [
+    {
+      "eval_id": "babd012a-4ae2-4349-99cb-a030db3f4491",
+      "label": "",
+      "band": [
+        0.6753848907984247,
+        0.8475832438238454
+      ],
+      "band_note": "",
+      "spread": 0.17219835302542075,
+      "mid": 0.761484067311135,
+      "sigma_abs": 0.008618975054178793,
+      "lsd": 0.024378142830750064,
+      "band_supports": 8.063637054756011,
+      "observed": 3,
+      "ceiling": false,
+      "gap": {
+        "gap": 0.1722,
+        "sigma_gap": 0.011,
+        "ratio": 15.6418,
+        "p_le0": 0.0
+      },
+      "sigma_source": "",
+      "n_runs": 5,
+      "n_nondegenerate": 5,
+      "n_failed": 0,
+      "scores_sorted": [
+        0.6754,
+        0.6861,
+        0.7386,
+        0.8356,
+        0.8476
+      ],
+      "n_test": 2066,
+      "n_classes": 7,
+      "per_class_counts": {
+        "0": 266,
+        "1": 300,
+        "2": 300,
+        "3": 300,
+        "4": 300,
+        "5": 300,
+        "6": 300
+      },
+      "rarest_class": 0,
+      "rarest_count": 266,
+      "per_class_recall": [],
+      "recall_delta": {}
+    }
+  ],
+  "links": {
+    "task_url": "https://horizon.bespokelabs.ai/tasks/4de1e511-7738-4889-bed3-a0a532b051e5",
+    "evals": [
+      {
+        "label": "",
+        "url": "https://horizon.bespokelabs.ai/evaluations/babd012a-4ae2-4349-99cb-a030db3f4491"
+      }
+    ],
+    "record": "tasks/budgeted-covtype.md",
+    "analysis": "../analysis/budgeted-covtype/STRATEGY.md",
+    "source_json": "../analysis/budgeted-covtype/band_supports.json"
+  },
+  "narrative": {}
+}

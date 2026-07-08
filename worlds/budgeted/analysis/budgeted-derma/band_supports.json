@@ -1,0 +1,72 @@
+{
+  "task": "budgeted-derma",
+  "world": "budgeted",
+  "metric": "balanced-acc",
+  "budget_label": "6",
+  "best_observed": 1.0,
+  "verdict_line": "real spread, but the rarest test class = 4 rows buries it; unresolvable at any run count",
+  "submit": "NO",
+  "primary_eval": "0dd9f969-ebd5-44ef-b891-aeeccfcd6502",
+  "evals": [
+    {
+      "eval_id": "0dd9f969-ebd5-44ef-b891-aeeccfcd6502",
+      "label": "",
+      "band": [
+        0.9307359307359307,
+        0.9458874458874459
+      ],
+      "band_note": "",
+      "spread": 0.015151515151515138,
+      "mid": 0.9383116883116883,
+      "sigma_abs": 0.02570576055876802,
+      "lsd": 0.07270687042665025,
+      "band_supports": 1.2083917938236748,
+      "observed": 1,
+      "ceiling": false,
+      "gap": {
+        "gap": 0.0152,
+        "sigma_gap": 0.0227,
+        "ratio": 0.6688,
+        "p_le0": 0.278
+      },
+      "sigma_source": "",
+      "n_runs": 5,
+      "n_nondegenerate": 5,
+      "n_failed": 0,
+      "scores_sorted": [
+        0.9307,
+        0.9426,
+        0.9426,
+        0.9426,
+        0.9459
+      ],
+      "n_test": 83,
+      "n_classes": 6,
+      "per_class_counts": {
+        "0": 16,
+        "1": 11,
+        "2": 12,
+        "3": 4,
+        "4": 26,
+        "5": 14
+      },
+      "rarest_class": 3,
+      "rarest_count": 4,
+      "per_class_recall": [],
+      "recall_delta": {}
+    }
+  ],
+  "links": {
+    "task_url": "https://horizon.bespokelabs.ai/tasks/1a019b65-bfed-4779-8e00-e3982d3c7a51",
+    "evals": [
+      {
+        "label": "",
+        "url": "https://horizon.bespokelabs.ai/evaluations/0dd9f969-ebd5-44ef-b891-aeeccfcd6502"
+      }
+    ],
+    "record": "tasks/budgeted-derma.md",
+    "analysis": "../analysis/budgeted-derma/STRATEGY.md",
+    "source_json": "../analysis/budgeted-derma/band_supports.json"
+  },
+  "narrative": {}
+}

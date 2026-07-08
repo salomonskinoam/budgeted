@@ -1,0 +1,147 @@
+{
+  "task": "label-budget-covtype-open",
+  "world": "label_budget",
+  "metric": "balanced-acc",
+  "budget_label": "L=1500",
+  "best_observed": 1.0,
+  "verdict_line": "the open-ended (no-hints) + rare-class-starved salvage of label-budget-covtype: a WIDE band AND a real, code-legible skill gradient (rare-class recall c1/c6, p_le0=0)",
+  "submit": "**YES** (skill gradient)",
+  "primary_eval": "303517c9-82fd-4641-84a2-cb4f88e41606",
+  "evals": [
+    {
+      "eval_id": "303517c9-82fd-4641-84a2-cb4f88e41606",
+      "label": "",
+      "band": [
+        0.49867106087041313,
+        0.5734351815389463
+      ],
+      "band_note": "",
+      "spread": 0.07476412066853322,
+      "mid": 0.5360531212046797,
+      "sigma_abs": 0.003878065635079984,
+      "lsd": 0.010968826033806287,
+      "band_supports": 7.8160549212931,
+      "observed": 4,
+      "ceiling": false,
+      "gap": {
+        "gap": 0.0748,
+        "sigma_gap": 0.0041,
+        "ratio": 18.3471,
+        "p_le0": 0.0
+      },
+      "sigma_source": "",
+      "n_runs": 5,
+      "n_nondegenerate": 5,
+      "n_failed": 0,
+      "scores_sorted": [
+        0.4987,
+        0.5022,
+        0.5205,
+        0.5361,
+        0.5734
+      ],
+      "n_test": 56250,
+      "n_classes": 7,
+      "per_class_counts": {
+        "0": 266,
+        "1": 1986,
+        "2": 20509,
+        "3": 27428,
+        "4": 1681,
+        "5": 3461,
+        "6": 919
+      },
+      "rarest_class": 0,
+      "rarest_count": 266,
+      "per_class_recall": [
+        {
+          "run": 3,
+          "score": 0.4987,
+          "recall": {
+            "0": 0.932,
+            "1": 0.197,
+            "2": 0.651,
+            "3": 0.829,
+            "4": 0.405,
+            "5": 0.448,
+            "6": 0.028
+          }
+        },
+        {
+          "run": 4,
+          "score": 0.5022,
+          "recall": {
+            "0": 0.906,
+            "1": 0.171,
+            "2": 0.712,
+            "3": 0.791,
+            "4": 0.432,
+            "5": 0.37,
+            "6": 0.133
+          }
+        },
+        {
+          "run": 2,
+          "score": 0.5205,
+          "recall": {
+            "0": 0.929,
+            "1": 0.255,
+            "2": 0.703,
+            "3": 0.753,
+            "4": 0.415,
+            "5": 0.441,
+            "6": 0.147
+          }
+        },
+        {
+          "run": 1,
+          "score": 0.5361,
+          "recall": {
+            "0": 0.914,
+            "1": 0.426,
+            "2": 0.722,
+            "3": 0.811,
+            "4": 0.441,
+            "5": 0.366,
+            "6": 0.073
+          }
+        },
+        {
+          "run": 5,
+          "score": 0.5734,
+          "recall": {
+            "0": 0.936,
+            "1": 0.508,
+            "2": 0.714,
+            "3": 0.81,
+            "4": 0.452,
+            "5": 0.422,
+            "6": 0.173
+          }
+        }
+      ],
+      "recall_delta": {
+        "0": 0.004,
+        "1": 0.311,
+        "2": 0.063,
+        "3": -0.019,
+        "4": 0.047,
+        "5": -0.026,
+        "6": 0.145
+      }
+    }
+  ],
+  "links": {
+    "task_url": "https://horizon.bespokelabs.ai/tasks/e9ee3601-21ce-4162-b868-ab424d7932cd",
+    "evals": [
+      {
+        "label": "",
+        "url": "https://horizon.bespokelabs.ai/evaluations/303517c9-82fd-4641-84a2-cb4f88e41606"
+      }
+    ],
+    "record": "tasks/label-budget-covtype-open.md",
+    "analysis": "../analysis/label-budget-covtype-open/STRATEGY.md",
+    "source_json": "../analysis/label-budget-covtype-open/band_supports.json"
+  },
+  "narrative": {}
+}

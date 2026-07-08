@@ -1,41 +1,68 @@
 # budgeted-thyroid: band-resolution record
 
-**Verdict: REJECT** (both variants).
-- ORIGINAL: #band_supports = 2.57 (< 3).
-- DROP-TSH salvage: #band_supports = 1.48 (< 3).
+**Verdict: below the 3-tier bar (73-row rarest class inflates sigma); drop-TSH salvage TIGHTER, it failed**
 
-Both 3-class, n_test 3428, rarest class 73 rows. No cost/feature knob manufactures heterogeneity the data lacks. The old README wrongly called the original "~1 level"; the correct #band_supports is 2.57 (close to but under the bar).
+## Eval: orig
 
-## Band (two evals)
+### Band
 
-| variant | eval | scores sorted | band | width |
-|---|---|---|---|---|
-| ORIGINAL | 6fcbf032 | 0.7472, 0.7984, 0.7999, 0.8029, 0.8448 | 0.747 → 0.845 | 0.098 |
-| DROP-TSH | 32c9a8ca | 0.7282, 0.7360, 0.7417, 0.7454, 0.7479 | 0.728 → 0.748 | 0.020 |
+- Eval: `6fcbf032-d5ef-4b13-9040-1fbc44a7a1ca` (orig); 5 runs, 5 non-degenerate, 0 failed / 0 excluded.
+- Scores sorted: 0.7472, 0.7984, 0.7999, 0.8029, 0.8448.
+- Band (worst to best): 0.7472 to 0.8448.
+- Width (spread): 0.0976.
 
-## Noise floor
+### Noise floor (this row's calculation)
 
-Metric: balanced accuracy. 3428 test rows / 3 classes; per-class 3178 / 177 / 73. The rarest class (73 rows) drives σ_abs.
+- Metric: balanced-acc.
+- Test: 3428 rows across 3 classes. per-class 3178 / 177 / 73
+- Rarest test class (2 = 73 rows) caps resolution (recall SE ~ sqrt(p(1-p)/73)).
+- sigma_abs = 0.022038.
+- LSD = z*sqrt(2)*sigma_abs (z=2) = 0.06233.
 
-- ORIGINAL: σ_abs = 0.022, LSD = z·√2·σ_abs (z=2) = 0.0623.
-- DROP-TSH: σ_abs = 0.0144, LSD = 0.0407.
+### #band_supports vs #observed
 
-## #band_supports vs #observed
+- #band_supports = 1 + width/LSD = 1 + 0.0976/0.06233 = **2.57**. endpoints ~2 LSDs apart.
+- #observed = 3 (the tiers the runs actually occupy).
+- Gap test: gap = 0.0976, sigma_gap = 0.0234, ratio = 4.18, p_le0 = 0.000.
 
-#band_supports = 1 + width/LSD.
+## Eval: drop-TSH
 
-- ORIGINAL: 1 + 0.098/0.0623 = 2.57 (corrects the old "~1"). #observed = 3. Even a 0.098-wide band only supports ~2.6 tiers because the 73-row rarest class inflates σ_abs. Endpoints sit ~1.6 LSD apart: wide-ish but not resolvable to 3 tiers. Gap test: gap 0.0976, σ_gap 0.0234, ratio 4.18, p(≤0) = 0.0.
-- DROP-TSH: 1 + 0.020/0.0407 = 1.48. #observed = 1. Endpoints only ~0.5 LSD apart: narrow, converged. Gap test: gap 0.0197, σ_gap 0.0148, ratio 1.33, p(≤0) = 0.102.
+### Band
 
-Both narrow-ish; high #band_supports with low #observed would mean wide-and-clustered, but here #band_supports is itself low.
+- Eval: `32c9a8ca-6045-4629-a27c-a01e13f656b7` (drop-TSH); 5 runs, 5 non-degenerate, 0 failed / 0 excluded.
+- Scores sorted: 0.7282, 0.7360, 0.7417, 0.7454, 0.7479.
+- Band (worst to best): 0.7282 to 0.7479.
+- Width (spread): 0.0197.
+
+### Noise floor (this row's calculation)
+
+- Metric: balanced-acc.
+- Test: 3428 rows across 3 classes. per-class 3178 / 177 / 73
+- Rarest test class (2 = 73 rows) caps resolution (recall SE ~ sqrt(p(1-p)/73)).
+- sigma_abs = 0.014397.
+- LSD = z*sqrt(2)*sigma_abs (z=2) = 0.04072.
+
+### #band_supports vs #observed
+
+- #band_supports = 1 + width/LSD = 1 + 0.0197/0.04072 = **1.48**. endpoints ~0 LSDs apart.
+- #observed = 1 (the tiers the runs actually occupy).
+- Gap test: gap = 0.0197, sigma_gap = 0.0148, ratio = 1.33, p_le0 = 0.102.
 
 ## Verdict
 
-≤2 rule ⇒ both REJECT (2.57 and 1.48 both under 3). The drop-TSH salvage TIGHTENED the band (0.098 → 0.020 width, 2.57 → 1.48): removing TSH removed the one discriminative axis, collapsing the endpoints. Salvage failed. Confirms no cost/feature knob manufactures the heterogeneity this data lacks.
+- Rule: #band_supports >= 3 = SUBMIT-viable; <= 2 = REJECT (at the ceiling, the gap test decides).
+- orig: #band_supports = 2.57.
+- drop-TSH: #band_supports = 1.48.
+- below the 3-tier bar (73-row rarest class inflates sigma); drop-TSH salvage TIGHTER, it failed
+
+## Why the drop-TSH salvage failed
+
+The drop-TSH salvage TIGHTENED the band (0.098 -> 0.020 width, #band_supports 2.57 -> 1.48), it did not widen it. Removing TSH removed the one discriminative axis, collapsing the endpoints. Confirms the design bible: no cost/feature knob manufactures the heterogeneity this data lacks (both variants REJECT).
 
 ## Links
 
 - Task: https://horizon.bespokelabs.ai/tasks/c69cfa04-5416-486c-b25a-0b345eea4d98
-- Original eval: https://horizon.bespokelabs.ai/evaluations/6fcbf032-d5ef-4b13-9040-1fbc44a7a1ca
-- Drop-TSH eval: https://horizon.bespokelabs.ai/evaluations/32c9a8ca-6045-4629-a27c-a01e13f656b7
-- JSONs: `scratch/analysis/6fcbf032/band_supports.json`, `scratch/analysis/32c9a8ca/band_supports.json`
+- Eval (orig): https://horizon.bespokelabs.ai/evaluations/6fcbf032-d5ef-4b13-9040-1fbc44a7a1ca
+- Eval (drop-TSH): https://horizon.bespokelabs.ai/evaluations/32c9a8ca-6045-4629-a27c-a01e13f656b7
+- Analysis (strategy, human-authored, updated independently): `../analysis/budgeted-thyroid/STRATEGY.md`
+- Source JSON: `../analysis/budgeted-thyroid/band_supports.json`
