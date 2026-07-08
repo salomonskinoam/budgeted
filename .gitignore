@@ -236,3 +236,8 @@ scratch/analysis/*/data_agent/
 scratch/analysis/*/run*
 scratch/analysis/*/*.npy
 scratch/analysis/*/verdict.json
+# Task-keyed analysis dirs (the new home): keep the durable band_supports.json + human STRATEGY.md;
+# dumped solutions/data/preds are regenerable from the slimmed rollouts via `band_resolution.py --emit`.
+worlds/*/analysis/*/solutions/
+worlds/*/analysis/*/data_agent/
+worlds/*/analysis/*/*.npy
