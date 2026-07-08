@@ -1,0 +1,27 @@
+# Build-context excludes. Honored by the materializer (sdk/hor_task.py respects this file AND
+# .gitignore when staging the task) and by `docker build`. Anything matched here is kept out of
+# the task IMAGE and the uploaded ZIP. Unlike .gitignore, this drops even tracked files.
+#
+# Only list paths that are NEVER part of a task image. Do NOT add generic names (tests, data,
+# src, *.py, *.md) that also exist as needed files inside the staged sdk/worlds/tasks_def.
+
+# world docs + committed run record: readmes and per-task band analysis
+# (band_supports.json + STRATEGY.md). Nested under worlds/<world>/, never shipped in the image.
+readmes/
+analysis/
+
+# local-only rollout / validation / cache scratch (also gitignored)
+.rollouts/
+.rollouts-full/
+.validation/
+.horizon_cache/
+.cache
+
+# python / tooling junk (also gitignored)
+__pycache__/
+*.py[codz]
+.pytest_cache/
+
+# repo-root scratch never part of a task
+horizon_env/
+scratch/
